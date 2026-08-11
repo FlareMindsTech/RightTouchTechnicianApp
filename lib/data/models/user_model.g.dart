@@ -1,0 +1,108 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'user_model.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
+    _$UserModelImpl(
+      id: json['_id'] as String?,
+      userId: json['userId'] as String?,
+      technicianId: json['technicianId'] as String?,
+      customerId: json['customerId'] as String?,
+      firstName: json['firstName'] as String?,
+      lastName: json['lastName'] as String?,
+      fullName: json['fullName'] as String?,
+      email: json['email'] as String?,
+      mobileNumber: json['mobileNumber'] as String?,
+      gender: json['gender'] as String?,
+      profileImage: json['profileImage'] as String?,
+      role: json['role'] as String?,
+      status: json['status'] as String?,
+      defaultAddressId: json['defaultAddressId'] as String?,
+      skills:
+          (json['skills'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      experienceYears: (json['experienceYears'] as num?)?.toInt(),
+      specialization: json['specialization'] as String?,
+      workStatus: json['workStatus'] as String?,
+      availability: json['availability'] as Map<String, dynamic>?,
+      trainingCompleted: json['trainingCompleted'] as bool?,
+      kycStatus: json['kycStatus'] as String?,
+      kycVerified: json['kycVerified'] as bool?,
+      bankVerified: json['bankVerified'] as bool?,
+      rating: (json['rating'] as num?)?.toDouble(),
+      totalJobsCompleted: (json['totalJobsCompleted'] as num?)?.toInt(),
+      address: json['address'] as String?,
+      city: json['city'] as String?,
+      state: json['state'] as String?,
+      pincode: json['pincode'] as String?,
+      locality: json['locality'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
+      updatedAt: json['updatedAt'] == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
+      technicianProfileId: json['technicianProfileId'] as String?,
+      isVerified: json['isVerified'] as bool?,
+      profileComplete: json['profileComplete'] as bool?,
+      profile: json['profile'] as Map<String, dynamic>?,
+      verificationStatus: json['verificationStatus'] as String?,
+      averageRating: (json['averageRating'] as num?)?.toDouble(),
+      kycDetails: json['technician'] as Map<String, dynamic>?,
+      rawData: json['rawData'] as Map<String, dynamic>?,
+      bankDetails: json['bankDetails'] as Map<String, dynamic>?,
+      bankVerificationStatus: json['bankVerificationStatus'] as String?,
+    );
+
+Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
+    <String, dynamic>{
+      '_id': instance.id,
+      'userId': instance.userId,
+      'technicianId': instance.technicianId,
+      'customerId': instance.customerId,
+      'firstName': instance.firstName,
+      'lastName': instance.lastName,
+      'fullName': instance.fullName,
+      'email': instance.email,
+      'mobileNumber': instance.mobileNumber,
+      'gender': instance.gender,
+      'profileImage': instance.profileImage,
+      'role': instance.role,
+      'status': instance.status,
+      'defaultAddressId': instance.defaultAddressId,
+      'skills': instance.skills,
+      'experienceYears': instance.experienceYears,
+      'specialization': instance.specialization,
+      'workStatus': instance.workStatus,
+      'availability': instance.availability,
+      'trainingCompleted': instance.trainingCompleted,
+      'kycStatus': instance.kycStatus,
+      'kycVerified': instance.kycVerified,
+      'bankVerified': instance.bankVerified,
+      'rating': instance.rating,
+      'totalJobsCompleted': instance.totalJobsCompleted,
+      'address': instance.address,
+      'city': instance.city,
+      'state': instance.state,
+      'pincode': instance.pincode,
+      'locality': instance.locality,
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
+      'createdAt': instance.createdAt?.toIso8601String(),
+      'updatedAt': instance.updatedAt?.toIso8601String(),
+      'technicianProfileId': instance.technicianProfileId,
+      'isVerified': instance.isVerified,
+      'profileComplete': instance.profileComplete,
+      'profile': instance.profile,
+      'verificationStatus': instance.verificationStatus,
+      'averageRating': instance.averageRating,
+      'technician': instance.kycDetails,
+      'rawData': instance.rawData,
+      'bankDetails': instance.bankDetails,
+      'bankVerificationStatus': instance.bankVerificationStatus,
+    };
