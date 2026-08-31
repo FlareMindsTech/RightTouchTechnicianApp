@@ -8,9 +8,9 @@ import 'package:right_touch/core/network/network_provider.dart';
 class JobRepository {
   final DioClient _client;
 
-  // Simple memory cache: Map<Key, List<dynamic>>
-  static final Map<String, List<dynamic>> _cache = {};
-  static final Map<String, DateTime> _cacheTime = {};
+  // Instance memory cache: Map<Key, List<dynamic>>
+  final Map<String, List<dynamic>> _cache = {};
+  final Map<String, DateTime> _cacheTime = {};
   static const _cacheDuration = Duration(minutes: 5);
 
   JobRepository(this._client);

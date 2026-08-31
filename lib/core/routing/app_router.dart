@@ -101,7 +101,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           if (isAuthRoute) return null;
           return '/login';
         },
-        orElse: () => null,
+        initial: () => null,
+        loading: () => null,
+        orElse: () {
+          if (isAuthRoute) return null;
+          return '/login';
+        },
       );
     },
     routes: [

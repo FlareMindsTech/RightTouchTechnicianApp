@@ -137,7 +137,7 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
 
   final AuthService _authService = AuthService();
 
-  void _handleSubmit() async {
+  Future<void> _handleSubmit() async {
     setState(() => _isSubmitting = true);
 
     try {
@@ -148,7 +148,7 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
         afterImagePath: _afterImagePath!,
       );
 
-      if (!uploadResult['success']) {
+      if (uploadResult['success'] != true) {
         if (mounted) {
           setState(() => _isSubmitting = false);
           ErrorHandler.showError(
@@ -180,7 +180,7 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
       );
 
       if (mounted) {
-        if (result['success']) {
+        if (result['success'] == true) {
           // Refresh data across the app
           ref.invalidate(currentJobsProvider);
           ref.invalidate(historyJobsProvider);

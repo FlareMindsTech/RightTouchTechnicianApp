@@ -33,7 +33,10 @@ void main() async {
   // Log App Signature Hash for OTP Auto-fill (Early as possible)
   if (kDebugMode) {
     try {
-      final String appSignature = await SmsAutoFill().getAppSignature;
+      final String appSignature = await SmsAutoFill().getAppSignature.timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => 'unknown',
+          );
       debugPrint('\n${'*' * 40}');
       debugPrint('📱 APP SIGNATURE HASH: $appSignature');
       debugPrint('*' * 40 + '\n');
@@ -44,18 +47,22 @@ void main() async {
 
   // Run initializations in parallel
   await Future.wait([
-    dotenv.load(fileName: ".env"),
+    () async {
+      try {
+        await dotenv.load(fileName: '.env');
+      } catch (e) {
+        debugPrint('Note: .env file not loaded (using environment definitions): $e');
+      }
+    }(),
     _initJailbreakDetection(),
     _initServices(),
   ]);
 
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
       systemNavigationBarIconBrightness: Brightness.dark,
-      systemNavigationBarDividerColor: Colors.transparent,
       systemNavigationBarContrastEnforced: false,
     ),
   );
@@ -103,12 +110,9 @@ class RightTouchApp extends ConsumerWidget {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
         systemNavigationBarIconBrightness: Brightness.dark,
-        systemNavigationBarDividerColor: Colors.transparent,
         systemNavigationBarContrastEnforced: false,
       ),
       child: MaterialApp.router(

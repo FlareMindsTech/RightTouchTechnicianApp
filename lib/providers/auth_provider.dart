@@ -65,15 +65,20 @@ class AuthNotifier extends Notifier<AuthState> {
       state = const AuthState.loading();
     }
     try {
-      final token = await _storage.read(key: 'auth_token');
+      final token = await _storage.read(key: 'auth_token').timeout(
+            const Duration(seconds: 3),
+            onTimeout: () => null,
+          );
       if (token != null) {
-        final user = await _repository.getProfile();
+        final user = await _repository.getProfile().timeout(
+              const Duration(seconds: 5),
+            );
         state = AuthState.authenticated(user);
       } else {
         state = const AuthState.unauthenticated();
       }
     } catch (e) {
-      debugPrint('AuthNotifier: checkAuth failed: $e');
+      debugPrint('AuthNotifier: checkAuth failed or timed out: $e');
 
       // Immediate redirect for deleted/deactivated/forbidden accounts
       if (_isDeactivatedOrUnauthorized(e)) {

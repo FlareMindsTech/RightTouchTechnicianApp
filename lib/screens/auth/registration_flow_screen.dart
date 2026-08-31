@@ -68,7 +68,7 @@ class _RegistrationFlowScreenState
     // That works fine inside a PageView.
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (_pageController.hasClients &&
             _pageController.page != null &&

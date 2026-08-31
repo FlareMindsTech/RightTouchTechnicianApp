@@ -19,10 +19,10 @@ class SocketService {
       ValueNotifier(SocketConnectionState.disconnected);
 
   // ─── Event Callbacks ───────────────────────────────────────────────
-  Function(Map<String, dynamic>)? onNewJob;
-  Function(String)? onJobTaken;
-  Function(List<dynamic>)? onJobsListReceived;
-  Function(Map<String, dynamic>)? onStatusUpdate;
+  void Function(Map<String, dynamic>)? onNewJob;
+  void Function(String)? onJobTaken;
+  void Function(List<dynamic>)? onJobsListReceived;
+  void Function(Map<String, dynamic>)? onStatusUpdate;
   VoidCallback? onConnected;
   VoidCallback? onDisconnected;
 
@@ -128,7 +128,7 @@ class SocketService {
     _socket!.on('job:new', (data) {
       _log('🔔 New Job Alert: ${data is Map ? data['serviceName'] : data}');
       try {
-        if (onNewJob != null && data != null) {
+        if (onNewJob != null && data != null && data is Map) {
           onNewJob!(Map<String, dynamic>.from(data));
         }
       } catch (e) {
@@ -154,7 +154,7 @@ class SocketService {
     _socket!.on('technician:jobs_list', (data) {
       _log('📦 Received jobs list: ${data is List ? data.length : 'N/A'}');
       try {
-        if (onJobsListReceived != null && data != null) {
+        if (onJobsListReceived != null && data != null && data is Iterable) {
           onJobsListReceived!(List<dynamic>.from(data));
         }
       } catch (e) {
@@ -166,7 +166,7 @@ class SocketService {
     _socket!.on('technician:status_update', (data) {
       _log('🆕 Technician Status Update: $data');
       try {
-        if (onStatusUpdate != null && data != null) {
+        if (onStatusUpdate != null && data != null && data is Map) {
           onStatusUpdate!(Map<String, dynamic>.from(data));
         }
       } catch (e) {

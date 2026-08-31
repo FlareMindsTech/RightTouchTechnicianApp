@@ -679,8 +679,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
                   hint: "Enter your email address",
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty)
+                    if (value == null || value.trim().isEmpty) {
                       return 'Required';
+                    }
                     final emailRegex =
                         RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
                     if (!emailRegex.hasMatch(value)) {

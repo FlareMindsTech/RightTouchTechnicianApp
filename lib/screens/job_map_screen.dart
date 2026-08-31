@@ -186,8 +186,9 @@ class _JobMapScreenState extends State<JobMapScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${ApiConfig.mapTilerKey}',
+                urlTemplate: ApiConfig.mapTilerKey.isNotEmpty
+                    ? 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${ApiConfig.mapTilerKey}'
+                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.righttouch.technician',
               ),
               PolylineLayer(

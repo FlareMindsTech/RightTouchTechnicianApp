@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:right_touch/providers/auth_provider.dart';
 import 'package:right_touch/utils/app_theme.dart';
 
@@ -22,7 +23,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
-    ref.read(authProvider.notifier).checkAuth();
+    await ref.read(authProvider.notifier).checkAuth();
+
+    // Fallback: If still on splash screen after checkAuth completes, force navigate to login/onboarding
+    if (mounted) {
+      final authState = ref.read(authProvider);
+      authState.maybeWhen(
+        authenticated: (_) {}, // Handled by GoRouter redirect
+        orElse: () {
+          ref.read(authProvider.notifier).hasSeenOnboarding().then((seen) {
+            if (!mounted) return;
+            context.go(seen ? '/login' : '/onboarding');
+          });
+        },
+      );
+    }
   }
 
   @override

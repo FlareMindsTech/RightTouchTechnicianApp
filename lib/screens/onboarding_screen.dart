@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:right_touch/utils/app_theme.dart';
@@ -214,65 +215,29 @@ class OnboardingPage extends StatelessWidget {
           child: Stack(
             children: [
               // Image with Hero-like animation effect
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(40),
-                    bottomRight: Radius.circular(40),
-                  ),
-                  image: DecorationImage(
-                    image: NetworkImage(image),
-                    fit: BoxFit.cover,
-                    onError: (e, s) {},
-                  ),
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
                 ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(40),
-                      bottomRight: Radius.circular(40),
-                    ),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.1),
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.2),
-                      ],
+                child: CachedNetworkImage(
+                  imageUrl: image,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey[100],
+                    child: Center(
+                      child: Icon(
+                        Icons.build_circle_outlined,
+                        size: 80,
+                        color: AppTheme.primaryColor.withValues(alpha: 0.5),
+                      ),
                     ),
                   ),
                 ),
               ),
-              // If image fails, show placeholder with better style
-              Positioned.fill(
-                child: FutureBuilder(
-                  future: precacheImage(NetworkImage(image), context),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.done) {
-                      return const SizedBox.shrink();
-                    }
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(40),
-                          bottomRight: Radius.circular(40),
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.image_outlined,
-                          size: 80,
-                          color: Colors.grey[300],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+
             ],
           ),
         ),

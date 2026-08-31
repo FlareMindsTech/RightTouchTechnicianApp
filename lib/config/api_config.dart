@@ -2,11 +2,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
   // Base URL for the backend
-  static String get baseUrl =>
-      dotenv.env['BASE_URL'] ??
-      const String.fromEnvironment(
-        'BASE_URL',
-      );
+  static String get baseUrl {
+    if (dotenv.isInitialized && dotenv.env.containsKey('BASE_URL')) {
+      final envUrl = dotenv.env['BASE_URL'];
+      if (envUrl != null && envUrl.isNotEmpty) return envUrl;
+    }
+    const fromEnv = String.fromEnvironment('BASE_URL');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    return 'https://righttouchservernew-727889857503.asia-south1.run.app';
+  }
 
   // API Endpoints
   static const String loginEndpoint = '/api/technician/login/technician';
@@ -36,11 +40,13 @@ class ApiConfig {
       '/api/technician/job-broadcast/respond/$bookingId';
 
   // API Keys
-  static String get mapTilerKey =>
-      dotenv.env['MAP_TILER_KEY'] ??
-      const String.fromEnvironment(
-        'MAP_TILER_KEY',
-      );
+  static String get mapTilerKey {
+    if (dotenv.isInitialized && dotenv.env.containsKey('MAP_TILER_KEY')) {
+      final key = dotenv.env['MAP_TILER_KEY'];
+      if (key != null && key.isNotEmpty) return key;
+    }
+    return const String.fromEnvironment('MAP_TILER_KEY');
+  }
 
   // Full URLs
   static String get loginUrl => '$baseUrl$loginEndpoint';

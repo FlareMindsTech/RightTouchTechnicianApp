@@ -11,9 +11,9 @@ class DioClient {
       : _dio = Dio(
           BaseOptions(
             baseUrl: ApiConfig.baseUrl,
-            connectTimeout: const Duration(seconds: 120),
-            receiveTimeout: const Duration(seconds: 120),
-            sendTimeout: const Duration(seconds: 120),
+            connectTimeout: const Duration(seconds: 20),
+            receiveTimeout: const Duration(seconds: 20),
+            sendTimeout: const Duration(seconds: 20),
             headers: {'Accept': 'application/json'},
           ),
         ) {

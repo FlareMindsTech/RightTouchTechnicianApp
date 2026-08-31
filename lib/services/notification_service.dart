@@ -18,7 +18,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   // Callback for when new job notification arrives
-  Function()? onNewJobReceived;
+  VoidCallback? onNewJobReceived;
 
   Future<void> initialize() async {
     // FCM removed as requested
@@ -46,8 +46,10 @@ class NotificationService {
         // Handle notification tap
         if (response.payload != null) {
           try {
-            final Map<String, dynamic> data = jsonDecode(response.payload!);
-            _handleNotificationTap(data);
+            final dynamic decoded = jsonDecode(response.payload!);
+            if (decoded is Map) {
+              _handleNotificationTap(Map<String, dynamic>.from(decoded));
+            }
           } catch (e) {
             debugPrint('Error parsing notification payload: $e');
           }

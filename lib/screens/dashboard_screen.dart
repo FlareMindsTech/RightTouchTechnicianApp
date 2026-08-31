@@ -66,7 +66,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
             child: Container(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
             ),
           ),
         ),
@@ -80,7 +80,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -126,7 +126,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             final route = GoRouterState.of(context).uri.toString();
-            if (route != '/login' && route != '/splash') {
+            if (route != '/login' && route != '/') {
               context.go('/login');
             }
           }
@@ -191,12 +191,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
         systemNavigationBarIconBrightness: Brightness.dark,
-        systemNavigationBarDividerColor: Colors.transparent,
         systemNavigationBarContrastEnforced: false,
       ),
       child: PopScope(

@@ -113,12 +113,9 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
         systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.dark,
           statusBarBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.white,
           systemNavigationBarIconBrightness: Brightness.dark,
-          systemNavigationBarDividerColor: Colors.transparent,
           systemNavigationBarContrastEnforced: false,
         ),
       ),

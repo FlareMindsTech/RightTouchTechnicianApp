@@ -301,7 +301,7 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
               ),
             ),
             data: (data) => Text(
-              '₹${data.totalEarnings.toStringAsFixed(0)}',
+              '₹${data.totalEarnings.toStringAsFixed(2)}',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 36,
@@ -629,7 +629,7 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
             border: Border.all(color: Colors.grey[100]!),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -640,7 +640,7 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -747,7 +747,7 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

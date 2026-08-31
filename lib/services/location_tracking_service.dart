@@ -10,9 +10,13 @@ import 'package:right_touch/widgets/location_permission_dialog.dart';
 import 'package:right_touch/core/routing/app_router.dart';
 import 'package:right_touch/providers/socket_provider.dart';
 
-final locationServiceProvider = Provider((ref) {
+final locationServiceProvider = Provider<LocationTrackingService>((ref) {
   final socketService = ref.watch(socketServiceProvider);
-  return LocationTrackingService(socketService: socketService);
+  final service = LocationTrackingService(socketService: socketService);
+  ref.onDispose(() {
+    service.dispose();
+  });
+  return service;
 });
 
 class LocationTrackingService with WidgetsBindingObserver {
@@ -45,7 +49,7 @@ class LocationTrackingService with WidgetsBindingObserver {
     }
   }
 
-  void startTracking() async {
+  Future<void> startTracking() async {
     if (_isTracking) return;
 
     bool serviceEnabled;

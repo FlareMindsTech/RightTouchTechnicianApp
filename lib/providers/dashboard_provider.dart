@@ -63,18 +63,24 @@ class DashboardNotifier extends AsyncNotifier<DashboardData> {
       jobRepo.getJobHistory(forceRefresh: forceRefresh),
     ]);
 
-    final walletResult = results[0] is Map
+    final rawWallet = results[0] is Map
         ? results[0] as Map<String, dynamic>
         : <String, dynamic>{};
+    final walletResult = (rawWallet['result'] is Map)
+        ? rawWallet['result'] as Map<String, dynamic>
+        : rawWallet;
+
     final transResult = results[1] is Map
         ? results[1] as Map<String, dynamic>
         : <String, dynamic>{};
     final currentJobs = results[2] is List ? results[2] as List<dynamic> : [];
     final historyJobs = results[3] is List ? results[3] as List<dynamic> : [];
 
-    final earnings = (walletResult['totalEarnings'] as num?)?.toDouble() ?? 0.0;
+    final earnings = (walletResult['totalEarnings'] as num?)?.toDouble() ??
+        (rawWallet['totalEarnings'] as num?)?.toDouble() ??
+        0.0;
     final balance =
-        ((walletResult['balance'] ?? walletResult['availableBalance']) as num?)
+        ((walletResult['balance'] ?? walletResult['availableBalance'] ?? rawWallet['balance'] ?? rawWallet['availableBalance']) as num?)
                 ?.toDouble() ??
             0.0;
 
