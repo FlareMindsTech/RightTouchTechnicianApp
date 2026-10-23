@@ -22,11 +22,11 @@ class TechnicianDashboard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: AppTheme.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -58,7 +58,7 @@ class TechnicianDashboard extends StatelessWidget {
                     "Pending",
                     pendingJobs.toString(),
                     Icons.hourglass_empty_rounded,
-                    Colors.orange,
+                    AppTheme.orange,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -67,7 +67,7 @@ class TechnicianDashboard extends StatelessWidget {
                     "Completed",
                     completedJobs.toString(),
                     Icons.check_circle_outline_rounded,
-                    Colors.green,
+                    AppTheme.green,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -115,7 +115,7 @@ class TechnicianDashboard extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade700,
+              color: AppTheme.grey.shade700,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
@@ -127,13 +127,13 @@ class TechnicianDashboard extends StatelessWidget {
 
   Widget _buildShimmerStatCard() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: AppTheme.grey[300]!,
+      highlightColor: AppTheme.grey[100]!,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         height: 100,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.white,
           borderRadius: BorderRadius.circular(12),
         ),
       ),

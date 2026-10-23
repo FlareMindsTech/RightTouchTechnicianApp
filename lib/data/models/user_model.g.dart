@@ -6,14 +6,13 @@ part of 'user_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
-    _$UserModelImpl(
+_UserModel _$UserModelFromJson(Map<String, dynamic> json) => _UserModel(
       id: json['_id'] as String?,
       userId: json['userId'] as String?,
       technicianId: json['technicianId'] as String?,
       customerId: json['customerId'] as String?,
-      firstName: json['firstName'] as String?,
-      lastName: json['lastName'] as String?,
+      firstName: json['fname'] as String?,
+      lastName: json['lname'] as String?,
       fullName: json['fullName'] as String?,
       email: json['email'] as String?,
       mobileNumber: json['mobileNumber'] as String?,
@@ -59,14 +58,14 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       bankVerificationStatus: json['bankVerificationStatus'] as String?,
     );
 
-Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
+Map<String, dynamic> _$UserModelToJson(_UserModel instance) =>
     <String, dynamic>{
       '_id': instance.id,
       'userId': instance.userId,
       'technicianId': instance.technicianId,
       'customerId': instance.customerId,
-      'firstName': instance.firstName,
-      'lastName': instance.lastName,
+      'fname': instance.firstName,
+      'lname': instance.lastName,
       'fullName': instance.fullName,
       'email': instance.email,
       'mobileNumber': instance.mobileNumber,

@@ -66,12 +66,12 @@ class HelpSupportScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           "Help & Support",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppTheme.black, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -103,22 +103,22 @@ class HelpSupportScreen extends StatelessWidget {
               const Text(
                 "If you have any issues or queries, please contact our support team. We are available 24/7 to assist you.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 16, height: 1.5),
+                style: TextStyle(color: AppTheme.grey, fontSize: 16, height: 1.5),
               ),
               const SizedBox(height: 48),
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppTheme.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: AppTheme.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
-                  border: Border.all(color: Colors.grey.shade100),
+                  border: Border.all(color: AppTheme.grey.shade100),
                 ),
                 child: Column(
                   children: [
@@ -127,7 +127,7 @@ class HelpSupportScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey,
+                        color: AppTheme.grey,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -145,11 +145,11 @@ class HelpSupportScreen extends StatelessWidget {
                       height: 50,
                       child: ElevatedButton.icon(
                         onPressed: () => _makeCall(context),
-                        icon: const Icon(Icons.call, color: Colors.white),
+                        icon: const Icon(Icons.call, color: AppTheme.white),
                         label: const Text(
                           "Call Now",
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.white,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -169,7 +169,7 @@ class HelpSupportScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey,
+                        color: AppTheme.grey,
                       ),
                     ),
                     const SizedBox(height: 8),

@@ -1,28 +1,24 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Added for HapticFeedback
-import 'package:right_touch/models/job.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:right_touch/data/models/job.dart';
+import 'package:right_touch/data/models/task_model.dart';
+import 'package:right_touch/providers/auth_provider.dart';
+import 'package:right_touch/providers/dashboard_provider.dart';
+import 'package:right_touch/providers/job_provider.dart';
+import 'package:right_touch/providers/nav_provider.dart';
+import 'package:right_touch/providers/socket_state_provider.dart';
+import 'package:right_touch/screens/tabs/widgets/schedule_global_map_view.dart';
+import 'package:right_touch/services/network_service.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/utils/error_handler.dart';
-import 'package:right_touch/widgets/list_shimmer.dart';
-import 'package:right_touch/providers/nav_provider.dart'; // Added as per snippet
-import 'package:right_touch/config/api_config.dart';
 import 'package:right_touch/widgets/empty_state.dart';
-import 'package:right_touch/providers/auth_provider.dart';
-import 'package:right_touch/models/task_model.dart';
-import 'package:right_touch/widgets/service_detail_view.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:right_touch/widgets/error_boundary.dart';
 import 'package:right_touch/widgets/fade_in_slide.dart';
 import 'package:right_touch/widgets/job_card.dart';
-import 'package:right_touch/providers/job_provider.dart';
-import 'package:right_touch/providers/dashboard_provider.dart';
-import 'package:right_touch/services/network_service.dart';
-import 'package:right_touch/providers/socket_state_provider.dart';
-import 'package:right_touch/widgets/error_boundary.dart';
+import 'package:right_touch/widgets/list_shimmer.dart';
+import 'package:right_touch/widgets/service_detail_view.dart';
 
 class ScheduleTab extends ConsumerStatefulWidget {
   const ScheduleTab({super.key});
@@ -32,11 +28,7 @@ class ScheduleTab extends ConsumerStatefulWidget {
 }
 
 class _ScheduleTabState extends ConsumerState<ScheduleTab> {
-  final MapController _mapController = MapController();
-  final TextEditingController _searchController = TextEditingController();
-
   bool _showMap = false;
-  bool _isSearching = false;
   Timer? _refreshTimer;
 
   @override
@@ -55,7 +47,6 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
-    _searchController.dispose();
     NetworkService().isConnected.removeListener(_onNetworkBack);
     super.dispose();
   }
@@ -72,39 +63,6 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
     ref.invalidate(currentJobsProvider);
     ref.invalidate(historyJobsProvider);
     ref.invalidate(dashboardDataProvider);
-  }
-
-  Future<void> _searchLocation(String query) async {
-    if (query.isEmpty) return;
-
-    setState(() => _isSearching = true);
-    try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=1',
-      );
-      final response = await http.get(
-        url,
-        headers: {'User-Agent': 'com.righttouch.technician'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data is List && data.isNotEmpty) {
-          final lat = double.parse(data[0]['lat']);
-          final lon = double.parse(data[0]['lon']);
-
-          _mapController.move(LatLng(lat, lon), 15.0);
-        } else {
-          if (mounted) {
-            ErrorHandler.showError(context, 'Location not found');
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Error searching location: $e');
-    } finally {
-      if (mounted) setState(() => _isSearching = false);
-    }
   }
 
   @override
@@ -145,10 +103,11 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: AppTheme.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[200]!),
+                              border: Border.all(color: AppTheme.grey[200] ?? const Color(0xFFEEEEEE)),
                             ),
+
                             child: const Icon(Icons.notifications_outlined,
                                 size: 24),
                           ),
@@ -160,7 +119,7 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
                                 width: 10,
                                 height: 10,
                                 decoration: const BoxDecoration(
-                                  color: Colors.orange,
+                                  color: AppTheme.orange,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -176,8 +135,8 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
           if (!_showMap)
             const TabBar(
               isScrollable: false,
-              labelColor: Colors.black,
-              unselectedLabelColor: Colors.grey,
+              labelColor: AppTheme.black,
+              unselectedLabelColor: AppTheme.grey,
               indicatorColor: AppTheme.primaryColor,
               tabs: [
                 Tab(text: "Pending"),
@@ -277,7 +236,7 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
                 "Showing ${jobs.length} items",
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: const TextStyle(color: AppTheme.grey, fontSize: 12),
               ),
             );
           }
@@ -299,18 +258,21 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
 
   Future<void> _navigateToServiceDetail(Job job) async {
     // Use real API data, with sensible fallbacks
-    final faultReason = (job.faultReasonsList != null && job.faultReasonsList!.isNotEmpty)
-        ? job.faultReasonsList!.join('\n• ')
+    final faultReasons = job.faultReasonsList;
+    final faultReason = (faultReasons != null && faultReasons.isNotEmpty)
+        ? faultReasons.join('\n• ')
         : (job.description.isNotEmpty
             ? job.description
             : "Reported issue needs investigation");
 
-    final toolsRequired = (job.toolsEquipments != null && job.toolsEquipments!.isNotEmpty)
-        ? job.toolsEquipments!
+    final tools = job.toolsEquipments;
+    final toolsRequired = (tools != null && tools.isNotEmpty)
+        ? tools
         : ["Standard Tool Kit", "Safety Equipment", "Cleaning Solution"];
 
-    final rectifySteps = (job.rectifyMethod != null && job.rectifyMethod!.isNotEmpty)
-        ? job.rectifyMethod!
+    final methods = job.rectifyMethod;
+    final rectifySteps = (methods != null && methods.isNotEmpty)
+        ? methods
         : [
             "Initial assessment and diagnostics",
             "Clean filter and internal components",
@@ -318,14 +280,16 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
             "Final testing and performance validation",
           ];
 
-    final checklistItems = (job.serviceChecklist != null && job.serviceChecklist!.isNotEmpty)
-        ? job.serviceChecklist!
+    final checklist = job.serviceChecklist;
+    final checklistItems = (checklist != null && checklist.isNotEmpty)
+        ? checklist
         : [
             "Safety check completed",
             "Tools collected and cleaned",
             "Service area cleaned",
             "Customer updated on repair status",
           ];
+
 
     final task = TaskModel(
       jobId: job.id,
@@ -347,8 +311,8 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
         builder: (context) => Scaffold(
           appBar: AppBar(
             title: const Text("Technician View"),
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
+            backgroundColor: AppTheme.white,
+            foregroundColor: AppTheme.black,
             elevation: 0,
           ),
           body: ServiceDetailView(task: task),
@@ -359,169 +323,16 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
     if (result == true) {
       // Job was completed successfully
       if (mounted) {
-        _refreshAll();
+        unawaited(_refreshAll());
       }
     }
   }
 
   Widget _buildGlobalMap(List<Job> allJobs) {
-    final jobsWithCoords = allJobs
-        .where((j) => j.latitude != null && j.longitude != null)
-        .toList();
-
-    return Stack(
-      children: [
-        FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: jobsWithCoords.isNotEmpty
-                ? LatLng(
-                    jobsWithCoords.first.latitude!,
-                    jobsWithCoords.first.longitude!,
-                  )
-                : const LatLng(13.0827, 80.2707),
-            initialZoom: 12.0,
-          ),
-          children: [
-            TileLayer(
-              urlTemplate:
-                  'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${ApiConfig.mapTilerKey}',
-              userAgentPackageName: 'com.righttouch.technician',
-            ),
-            MarkerLayer(
-              markers: jobsWithCoords.map((job) {
-                return Marker(
-                  point: LatLng(job.latitude!, job.longitude!),
-                  width: 100,
-                  height: 60,
-                  child: GestureDetector(
-                    onTap: () => _navigateToServiceDetail(job),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                            border: Border.all(color: AppTheme.primaryColor),
-                          ),
-                          child: Text(
-                            job.title,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Icon(
-                          Icons.location_on,
-                          color: AppTheme.primaryColor,
-                          size: 24,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-        // Search Bar
-        Positioned(
-          top: 16,
-          left: 16,
-          right: 16,
-          child: Row(
-            children: [
-              // Back Button
-              GestureDetector(
-                onTap: () => setState(() => _showMap = false),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.black,
-                    size: 24,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Search Input
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: _searchLocation,
-                    decoration: InputDecoration(
-                      hintText: "Search location...",
-                      hintStyle: TextStyle(color: Colors.grey[400]),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 14,
-                      ),
-                      suffixIcon: _isSearching
-                          ? const UnconstrainedBox(
-                              child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppTheme.primaryColor,
-                                ),
-                              ),
-                            )
-                          : IconButton(
-                              icon: const Icon(
-                                Icons.search,
-                                color: Colors.grey,
-                              ),
-                              onPressed: () =>
-                                  _searchLocation(_searchController.text),
-                            ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return ScheduleGlobalMapView(
+      allJobs: allJobs,
+      onBack: () => setState(() => _showMap = false),
+      onJobTap: _navigateToServiceDetail,
     );
   }
 }

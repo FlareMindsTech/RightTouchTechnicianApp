@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:right_touch/utils/app_theme.dart';
-import 'package:right_touch/models/job.dart';
+import 'package:right_touch/data/models/job.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class JobCard extends StatelessWidget {
@@ -49,7 +49,7 @@ class JobCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isClickable ? Colors.white : Colors.grey.shade50,
+          color: isClickable ? AppTheme.white : AppTheme.grey.shade50,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -58,7 +58,7 @@ class JobCard extends StatelessWidget {
               offset: const Offset(0, 8),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: AppTheme.black.withValues(alpha: 0.02),
               blurRadius: 2,
               offset: const Offset(0, 1),
             ),
@@ -81,7 +81,7 @@ class JobCard extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: isClickable
                           ? [AppTheme.primaryColor, AppTheme.successColor]
-                          : [Colors.grey.shade400, Colors.grey.shade300],
+                          : [AppTheme.grey.shade400, AppTheme.grey.shade300],
                     ),
                   ),
                 ),
@@ -97,9 +97,10 @@ class JobCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                             if (isExclusive)
                               Container(
                                 margin: const EdgeInsets.only(bottom: 8),
@@ -109,12 +110,12 @@ class JobCard extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
-                                    colors: [Colors.orange, Colors.deepOrange],
+                                    colors: [AppTheme.orange, AppTheme.deepOrange],
                                   ),
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.orange.withValues(
+                                      color: AppTheme.orange.withValues(
                                         alpha: 0.3,
                                       ),
                                       blurRadius: 8,
@@ -125,7 +126,7 @@ class JobCard extends StatelessWidget {
                                 child: const Text(
                                   "EXCLUSIVE",
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: AppTheme.white,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 0.5,
@@ -138,28 +139,32 @@ class JobCard extends StatelessWidget {
                               ),
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.grey[600],
+                                color: AppTheme.grey[600],
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
-                        // Earnings Badge with Call Icon
-                        Row(
+                      ),
+                      const SizedBox(width: 8),
+                      // Earnings Badge with Call Icon
+                      Flexible(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             // Call Icon Button - Only show if specifically requested and phone exists
                             if (showCallButton && hasPhone)
                               Container(
                                 margin: const EdgeInsets.only(right: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
+                                  color: AppTheme.green.shade50,
                                   shape: BoxShape.circle,
                                 ),
                                 child: IconButton(
                                   icon: Icon(
                                     Icons.phone,
                                     size: 20,
-                                    color: Colors.green.shade700,
+                                    color: AppTheme.green.shade700,
                                   ),
                                   onPressed: () =>
                                       _makeCall(displayJob.customerPhone!),
@@ -171,42 +176,49 @@ class JobCard extends StatelessWidget {
                                 ),
                               ),
                             // Earnings
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryLight,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: AppTheme.primaryColor.withValues(
-                                    alpha: 0.1,
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
                                   ),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.currency_rupee_rounded,
-                                    size: 16,
-                                    color: AppTheme.primaryColor,
-                                  ),
-                                  Text(
-                                    earnings.toStringAsFixed(0),
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppTheme.primaryColor,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryLight,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppTheme.primaryColor.withValues(
+                                        alpha: 0.1,
+                                      ),
                                     ),
                                   ),
-                                ],
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.currency_rupee_rounded,
+                                        size: 16,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                      Text(
+                                        earnings.toStringAsFixed(0),
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppTheme.primaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
                     const SizedBox(height: 16),
 
                     // Main Content
@@ -216,7 +228,7 @@ class JobCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.grey[50],
+                            color: AppTheme.grey[50],
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -262,10 +274,10 @@ class JobCard extends StatelessWidget {
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.red.shade50,
+                                    color: AppTheme.red.shade50,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: Colors.red.shade200,
+                                      color: AppTheme.red.shade200,
                                       width: 1.5,
                                     ),
                                   ),
@@ -278,14 +290,14 @@ class JobCard extends StatelessWidget {
                                           Icon(
                                             Icons.warning_amber_rounded,
                                             size: 14,
-                                            color: Colors.red.shade800,
+                                            color: AppTheme.red.shade800,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             "Fault Reason",
                                             style: TextStyle(
                                               fontSize: 10,
-                                              color: Colors.red.shade800,
+                                              color: AppTheme.red.shade800,
                                               fontWeight: FontWeight.bold,
                                               letterSpacing: 0.5,
                                             ),
@@ -297,7 +309,7 @@ class JobCard extends StatelessWidget {
                                         displayJob.faultReasonsList!.join(', '),
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.red.shade900,
+                                          color: AppTheme.red.shade900,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -321,7 +333,7 @@ class JobCard extends StatelessWidget {
                         Icon(
                           Icons.location_on_rounded,
                           size: 16,
-                          color: Colors.grey[400],
+                          color: AppTheme.grey[400],
                         ),
                         const SizedBox(width: 6),
                         Expanded(
@@ -329,7 +341,7 @@ class JobCard extends StatelessWidget {
                             displayJob?.location ?? 'Location not specified',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey[600],
+                              color: AppTheme.grey[600],
                               fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,

@@ -1,11 +1,14 @@
-import 'package:flutter/gestures.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:right_touch/data/repositories/auth_repository.dart';
+import 'package:right_touch/screens/auth/widgets/already_registered_banner.dart';
+import 'package:right_touch/screens/auth/widgets/registration_terms_checkboxes.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/utils/error_handler.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:right_touch/utils/validators.dart';
+import 'package:right_touch/widgets/rt_loader.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   final String? identifier;
@@ -49,17 +52,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     super.dispose();
   }
 
-  Future<void> _launchPolicy(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not launch $url')));
-      }
-    }
-  }
-
   Future<void> _handleConfirm() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -72,7 +64,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     }
 
     setState(() => _isLoading = true);
-    final identifier = _phoneController.text.trim();
+    final identifier = Validators.normalizeMobile(_phoneController.text);
 
     try {
       final result = await ref.read(authRepositoryProvider).signup(
@@ -90,10 +82,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               backgroundColor: AppTheme.primaryColor,
             ),
           );
-          context.push(
+          unawaited(context.push(
             '/otp',
             extra: {'identifier': identifier, 'isLogin': false},
-          );
+          ));
         }
       } else {
         if (mounted) {
@@ -156,8 +148,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -169,7 +161,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                           color: AppTheme.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         "Join our professional network",
                         style: TextStyle(
@@ -184,19 +176,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 Expanded(
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(24.0),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(AppTheme.borderRadiusLarge),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 20,
-                          offset: Offset(0, -5),
-                        ),
-                      ],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 12.0,
                     ),
                     child: SingleChildScrollView(
                       child: Form(
@@ -204,168 +186,92 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 8),
                             TextFormField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
                               maxLength: 10,
                               enabled: !_isLoading,
+                              textInputAction: TextInputAction.done,
+                              autofillHints: const [AutofillHints.telephoneNumber],
+                              autovalidateMode: AutovalidateMode.onUserInteraction,
+                              inputFormatters: [Validators.digitsOnlyFormatter],
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
+                              ),
                               decoration: InputDecoration(
-                                labelText: "Mobile Number",
-                                hintText: "Enter your 10 digit number",
+                                hintText: "Mobile Number",
                                 counterText: "",
-                                prefixIcon: Icon(
-                                  Icons.phone_android_rounded,
-                                  color: AppTheme.textSecondary,
+                                filled: true,
+                                fillColor: AppTheme.white,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 18,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE5E7EB),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE5E7EB),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFF8CD8AE),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                prefixIcon: const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 14),
+                                  child: Icon(
+                                    Icons.phone_android_rounded,
+                                    color: Color(0xFF6B7280),
+                                    size: 22,
+                                  ),
                                 ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your mobile number';
-                                }
-                                if (value.length != 10) {
-                                  return 'Mobile number must be 10 digits';
-                                }
-                                return null;
-                              },
+                              validator: Validators.validateIndianMobile,
                             ),
                             const SizedBox(height: 32),
-                            _buildCheckboxItem(
-                              value: _agreedToTerms,
-                              onChanged: (v) =>
-                                  setState(() => _agreedToTerms = v!),
-                              child: Text.rich(
-                                TextSpan(
-                                  text: "I agree to the ",
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 13,
-                                  ),
-                                  children: [
-                                    _linkSpan(
-                                      "Terms and Conditions",
-                                      "https://righttouch.vercel.app/terms/",
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildCheckboxItem(
-                              value: _agreedToPrivacy,
-                              onChanged: (v) =>
-                                  setState(() => _agreedToPrivacy = v!),
-                              child: Text.rich(
-                                TextSpan(
-                                  text: "I agree to the ",
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 13,
-                                  ),
-                                  children: [
-                                    _linkSpan(
-                                      "Privacy Policy",
-                                      "https://righttouch.vercel.app/privacy/",
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            RegistrationTermsCheckboxes(
+                              agreedToTerms: _agreedToTerms,
+                              agreedToPrivacy: _agreedToPrivacy,
+                              onTermsChanged: (v) =>
+                                  setState(() => _agreedToTerms = v),
+                              onPrivacyChanged: (v) =>
+                                  setState(() => _agreedToPrivacy = v),
                             ),
                             const SizedBox(height: 48),
-                            // Friendly suggestion when number is already registered
                             if (_showLoginSuggestion)
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 16),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE8F5E9),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: AppTheme.primaryColor.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.info_outline,
-                                      color: AppTheme.primaryColor,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Already have an account?',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppTheme.primaryColor,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          const Text(
-                                            'This number is already registered.',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: AppTheme.textSecondary,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          GestureDetector(
-                                            onTap: () {
-                                              final identifier =
-                                                  _phoneController.text.trim();
-                                              context.pushReplacement(
-                                                '/login',
-                                                extra: {
-                                                  'identifier': identifier,
-                                                },
-                                              );
-                                            },
-                                            child: const Text(
-                                              'Go to Login →',
-                                              style: TextStyle(
-                                                color: AppTheme.primaryColor,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () => setState(
-                                        () => _showLoginSuggestion = false,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: AppTheme.textSecondary,
-                                      ),
-                                    ),
-                                  ],
+                              AlreadyRegisteredBanner(
+                                phone: _phoneController.text,
+                                onClose: () => setState(
+                                  () => _showLoginSuggestion = false,
                                 ),
                               ),
                             SizedBox(
                               width: double.infinity,
-                              height: 60,
+                              height: 56,
                               child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF8CD8AE),
+                                  foregroundColor: AppTheme.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
                                 onPressed: _isLoading ? null : _handleConfirm,
                                 child: _isLoading
-                                    ? const SizedBox(
-                                        height: 24,
-                                        width: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      )
+                                    ? const RtLoader.button(color: AppTheme.white)
                                     : const Text(
                                         "Continue",
                                         style: TextStyle(
@@ -379,13 +285,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                             Center(
                               child: GestureDetector(
                                 onTap: () => context.pop(),
-                                child: Text.rich(
+                                child: const Text.rich(
                                   TextSpan(
                                     text: "Already have an account? ",
                                     style: TextStyle(
                                       color: AppTheme.textSecondary,
                                     ),
-                                    children: const [
+                                    children: [
                                       TextSpan(
                                         text: "Login",
                                         style: TextStyle(
@@ -409,44 +315,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildCheckboxItem({
-    required bool value,
-    required ValueChanged<bool?> onChanged,
-    required Widget child,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 24,
-          width: 24,
-          child: Checkbox(
-            value: value,
-            activeColor: AppTheme.primaryColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-            ),
-            onChanged: onChanged,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: child),
-      ],
-    );
-  }
-
-  TextSpan _linkSpan(String text, String url, {bool isBold = false}) {
-    return TextSpan(
-      text: text,
-      style: TextStyle(
-        color: AppTheme.primaryColor,
-        fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-        decoration: TextDecoration.underline,
-      ),
-      recognizer: TapGestureRecognizer()..onTap = () => _launchPolicy(url),
     );
   }
 }

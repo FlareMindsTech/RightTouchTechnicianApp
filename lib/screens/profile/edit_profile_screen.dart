@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:right_touch/providers/auth_provider.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/utils/error_handler.dart';
+import 'package:right_touch/utils/validators.dart';
+import 'package:right_touch/widgets/rt_loader.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -142,12 +144,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       appBar: AppBar(
         title: const Text('Edit Profile'),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppTheme.white,
+        foregroundColor: AppTheme.black,
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+              child: RtLoader(),
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
@@ -164,17 +166,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           child: _buildTextField(
                             controller: _fnameController,
                             label: 'First Name',
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'[a-zA-Z\s]'))
-                            ],
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Required';
-                              if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(v)) {
-                                return 'Only letters and spaces allowed';
-                              }
-                              return null;
-                            },
+                            inputFormatters: [Validators.nameInputFormatter],
+                            validator: (v) => Validators.validateName(
+                              v,
+                              fieldName: 'First Name',
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -182,17 +178,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           child: _buildTextField(
                             controller: _lnameController,
                             label: 'Last Name',
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'[a-zA-Z\s]'))
-                            ],
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Required';
-                              if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(v)) {
-                                return 'Only letters and spaces allowed';
-                              }
-                              return null;
-                            },
+                            inputFormatters: [Validators.nameInputFormatter],
+                            validator: (v) => Validators.validateName(
+                              v,
+                              fieldName: 'Last Name',
+                            ),
                           ),
                         ),
                       ],
@@ -202,14 +192,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       controller: _emailController,
                       label: 'Email Address',
                       keyboardType: TextInputType.emailAddress,
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Required';
-                        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                        if (!emailRegex.hasMatch(v)) {
-                          return 'Please enter a valid email address';
-                        }
-                        return null;
-                      },
+                      validator: Validators.validateEmail,
                     ),
                     const SizedBox(height: 16),
                     _buildGenderDropdown(),
@@ -219,16 +202,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     _buildTextField(
                       controller: _specController,
                       label: 'Specialization (e.g. AC Repair)',
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'))
-                      ],
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Required';
-                        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(v)) {
-                          return 'Only letters and spaces allowed';
-                        }
-                        return null;
-                      },
+                      inputFormatters: [Validators.nameInputFormatter],
+                      validator: (v) =>
+                          Validators.validateRequired(v, 'Specialization'),
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
@@ -240,7 +216,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         final years = int.tryParse(v);
                         if (years == null) return 'Invalid number';
                         if (years < 0) return 'Experience cannot be negative';
-                        if (years > 50) return 'Experience cannot exceed 50 years';
+                        if (years > 15) return 'Experience cannot exceed 15 years';
                         return null;
                       },
                     ),
@@ -250,7 +226,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     _buildTextField(
                       controller: _addressController,
                       label: 'Street Address',
-                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                      validator: (v) =>
+                          Validators.validateRequired(v, 'Street Address', minLength: 3),
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -259,7 +236,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           child: _buildTextField(
                             controller: _localityController,
                             label: 'Locality',
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
+                            inputFormatters: [Validators.nameInputFormatter],
+                            validator: (v) =>
+                                Validators.validateRequired(v, 'Locality'),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -267,7 +246,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           child: _buildTextField(
                             controller: _cityController,
                             label: 'City',
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
+                            inputFormatters: [Validators.nameInputFormatter],
+                            validator: (v) =>
+                                Validators.validateName(v, fieldName: 'City'),
                           ),
                         ),
                       ],
@@ -279,7 +260,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           child: _buildTextField(
                             controller: _stateController,
                             label: 'State',
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
+                            inputFormatters: [Validators.nameInputFormatter],
+                            validator: (v) =>
+                                Validators.validateName(v, fieldName: 'State'),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -288,7 +271,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             controller: _pincodeController,
                             label: 'Pincode',
                             keyboardType: TextInputType.number,
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
+                            inputFormatters: [Validators.digitsOnlyFormatter],
+                            validator: Validators.validatePincode,
                           ),
                         ),
                       ],
@@ -309,7 +293,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           'Save Changes',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.white,
+                            color: AppTheme.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -345,6 +329,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textInputAction: TextInputAction.next,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       inputFormatters: inputFormatters,
       validator: validator,
       decoration: InputDecoration(

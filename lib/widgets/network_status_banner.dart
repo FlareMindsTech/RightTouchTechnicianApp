@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:right_touch/services/network_service.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 /// Widget to display network status banner
 class NetworkStatusBanner extends StatelessWidget {
@@ -23,21 +24,21 @@ class NetworkStatusBanner extends StatelessWidget {
             color: Color(0xFFFF9800),
             boxShadow: [
               BoxShadow(
-                color: Colors.black12,
+                color: AppTheme.black12,
                 blurRadius: 4,
                 offset: Offset(0, 2),
               ),
             ],
           ),
-          child: Row(
+          child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.cloud_off, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.cloud_off, color: AppTheme.white, size: 18),
+              SizedBox(width: 8),
+              Text(
                 'No internet connection',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -74,12 +75,12 @@ class NetworkStatusIndicator extends StatelessWidget {
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.cloud_off, color: Colors.white, size: 14),
+              Icon(Icons.cloud_off, color: AppTheme.white, size: 14),
               SizedBox(width: 4),
               Text(
                 'Offline',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),

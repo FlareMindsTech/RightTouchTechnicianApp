@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Right Touch needs your location to guide you to service job destinations and track route progress.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Right Touch needs your location to update customers on technician arrival status during active service jobs.</string>
 </dict>
 </plist>

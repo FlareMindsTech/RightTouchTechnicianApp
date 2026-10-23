@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,9 +43,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   ];
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.white,
       body: Stack(
         children: [
           // Background PageView
@@ -59,13 +66,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             itemCount: _pages.length,
             itemBuilder: (context, index) {
               return OnboardingPage(
-                image: _pages[index]['image']!,
-                title: _pages[index]['title']!,
-                description: _pages[index]['description']!,
+                image: _pages[index]['image'] ?? '',
+                title: _pages[index]['title'] ?? '',
+                description: _pages[index]['description'] ?? '',
                 index: index,
               );
             },
           ),
+
 
           // Top Skip Button
           SafeArea(
@@ -84,7 +92,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     router.go('/login');
                   },
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.black.withValues(alpha: 0.05),
+                    backgroundColor: AppTheme.black.withValues(alpha: 0.05),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 10,
@@ -96,7 +104,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: const Text(
                     "Skip",
                     style: TextStyle(
-                      color: Colors.black87,
+                      color: AppTheme.black87,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -144,10 +152,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       if (!mounted) return;
                       router.go('/login');
                     } else {
-                      _pageController.nextPage(
+                      unawaited(_pageController.nextPage(
                         duration: const Duration(milliseconds: 500),
                         curve: Curves.easeOutCubic,
-                      );
+                      ));
                     }
                   },
                   child: AnimatedContainer(
@@ -170,14 +178,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           ? const Text(
                               "Get Started",
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
                             )
                           : const Icon(
                               Icons.arrow_forward_ios_rounded,
-                              color: Colors.white,
+                              color: AppTheme.white,
                               size: 24,
                             ),
                     ),
@@ -226,7 +234,7 @@ class OnboardingPage extends StatelessWidget {
                   height: double.infinity,
                   fit: BoxFit.cover,
                   errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[100],
+                    color: AppTheme.grey[100],
                     child: Center(
                       child: Icon(
                         Icons.build_circle_outlined,
@@ -251,14 +259,14 @@ class OnboardingPage extends StatelessWidget {
               children: [
                 ShaderMask(
                   shaderCallback: (bounds) => const LinearGradient(
-                    colors: [AppTheme.primaryColor, Colors.black87],
+                    colors: [AppTheme.primaryColor, AppTheme.black87],
                   ).createShader(bounds),
                   child: Text(
                     title,
                     style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppTheme.white,
                     ),
                   ),
                 ),
@@ -267,7 +275,7 @@ class OnboardingPage extends StatelessWidget {
                   description,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey[600],
+                    color: AppTheme.grey[600],
                     height: 1.6,
                     letterSpacing: 0.2,
                   ),

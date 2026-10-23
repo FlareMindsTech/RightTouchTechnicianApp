@@ -1,7 +1,11 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
-  // Base URL for the backend
+  /// Base URL for the backend API and Socket.IO connection.
+  /// Priority:
+  /// 1. `.env` file (if loaded in development)
+  /// 2. Build-time dart define: `--dart-define=BASE_URL=https://...`
+  /// 3. Default production fallback
   static String get baseUrl {
     if (dotenv.isInitialized && dotenv.env.containsKey('BASE_URL')) {
       final envUrl = dotenv.env['BASE_URL'];
@@ -9,7 +13,7 @@ class ApiConfig {
     }
     const fromEnv = String.fromEnvironment('BASE_URL');
     if (fromEnv.isNotEmpty) return fromEnv;
-    return 'https://righttouchservernew-727889857503.asia-south1.run.app';
+    return 'https://backend-pa6p.onrender.com';
   }
 
   // API Endpoints

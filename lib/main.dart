@@ -9,7 +9,19 @@ import 'package:right_touch/services/notification_service.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/services/network_service.dart';
 import 'package:right_touch/core/routing/app_router.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:right_touch/core/notifications/notification_channels.dart';
 import 'package:sms_autofill/sms_autofill.dart';
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Background message handler Firebase init error: $e');
+  }
+}
 
 final NetworkService networkService = NetworkService();
 final GlobalKey<ScaffoldMessengerState> messengerKey =
@@ -17,11 +29,66 @@ final GlobalKey<ScaffoldMessengerState> messengerKey =
 
 class GlobalScaffold {
   static void showSnackBar(String message, {bool isError = false}) {
+    messengerKey.currentState?.hideCurrentSnackBar();
     messengerKey.currentState?.showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : AppTheme.primaryColor,
+        backgroundColor: isError ? AppTheme.red : AppTheme.primaryColor,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  static void showJobOfferBanner({
+    required String title,
+    required String subtitle,
+    required VoidCallback onView,
+  }) {
+    messengerKey.currentState?.hideCurrentMaterialBanner();
+    messengerKey.currentState?.showMaterialBanner(
+      MaterialBanner(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: AppTheme.white,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: const TextStyle(fontSize: 13, color: AppTheme.white70),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryColor,
+        leading: const Icon(Icons.work_outline, color: AppTheme.white, size: 28),
+        actions: [
+          TextButton(
+            onPressed: () {
+              messengerKey.currentState?.hideCurrentMaterialBanner();
+            },
+            child: const Text('Dismiss', style: TextStyle(color: AppTheme.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              messengerKey.currentState?.hideCurrentMaterialBanner();
+              onView();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.white,
+              foregroundColor: AppTheme.primaryColor,
+              elevation: 0,
+            ),
+            child: const Text('View', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -29,6 +96,15 @@ class GlobalScaffold {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase & background messaging
+  try {
+    await Firebase.initializeApp();
+    await initNotificationChannel();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  } catch (e) {
+    debugPrint('Firebase initialization notice: $e');
+  }
 
   // Log App Signature Hash for OTP Auto-fill (Early as possible)
   if (kDebugMode) {
@@ -58,7 +134,7 @@ void main() async {
     _initServices(),
   ]);
 
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarIconBrightness: Brightness.dark,
@@ -72,9 +148,14 @@ void main() async {
 
 Future<void> _initJailbreakDetection() async {
   try {
-    bool isSecure = await SecurityService.isDeviceSecure();
-    if (!isSecure && kDebugMode) {
-      debugPrint('⚠️ WARNING: Security Alert - Device appears compromised');
+    final isSecure = await SecurityService.isDeviceSecure();
+    final isDev = await SecurityService.isDevMode();
+
+    if (!isSecure) {
+      // Option A2: Telemetry warning without blocking technician access
+      debugPrint('⚠️ SECURITY ALERT: Compromised/Rooted device detected. Logging event.');
+    } else if (isDev && kDebugMode) {
+      debugPrint('ℹ️ Security Notice: Developer mode enabled on device');
     }
   } catch (e) {
     if (kDebugMode) {
@@ -82,6 +163,7 @@ Future<void> _initJailbreakDetection() async {
     }
   }
 }
+
 
 Future<void> _initServices() async {
   try {

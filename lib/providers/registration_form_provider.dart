@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RegistrationFormState {
   // Profile Data
@@ -60,6 +63,74 @@ class RegistrationFormState {
     this.upi = '',
   });
 
+  Map<String, dynamic> toJson() {
+    return {
+      'fname': fname,
+      'lname': lname,
+      'email': email,
+      'address': address,
+      'city': city,
+      'state': state,
+      'pincode': pincode,
+      'locality': locality,
+      'exp': exp,
+      'specialization': specialization,
+      'gender': gender,
+      'selectedServices': selectedServices,
+      'aadharNumber': aadharNumber,
+      'panNumber': panNumber,
+      'dlNumber': dlNumber,
+      'aadharPath': aadharPath,
+      'aadharBackPath': aadharBackPath,
+      'panPath': panPath,
+      'dlPath': dlPath,
+      'accountHolder': accountHolder,
+      'bankName': bankName,
+      'accountNumber': accountNumber,
+      'ifsc': ifsc,
+      'branch': branch,
+      'upi': upi,
+    };
+  }
+
+  factory RegistrationFormState.fromJson(Map<String, dynamic> json) {
+    List<Map<String, dynamic>> parseServices(dynamic list) {
+      if (list is! List) return const [];
+      return list
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+
+    return RegistrationFormState(
+      fname: json['fname']?.toString() ?? '',
+      lname: json['lname']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      address: json['address']?.toString() ?? '',
+      city: json['city']?.toString() ?? '',
+      state: json['state']?.toString() ?? '',
+      pincode: json['pincode']?.toString() ?? '',
+      locality: json['locality']?.toString() ?? '',
+      exp: json['exp']?.toString() ?? '',
+      specialization: json['specialization']?.toString() ?? '',
+      gender: json['gender']?.toString() ?? 'Male',
+      selectedServices: parseServices(json['selectedServices']),
+      aadharNumber: json['aadharNumber']?.toString() ?? '',
+      panNumber: json['panNumber']?.toString() ?? '',
+      dlNumber: json['dlNumber']?.toString() ?? '',
+      aadharPath: json['aadharPath']?.toString(),
+      aadharBackPath: json['aadharBackPath']?.toString(),
+      panPath: json['panPath']?.toString(),
+      dlPath: json['dlPath']?.toString(),
+      accountHolder: json['accountHolder']?.toString() ?? '',
+      bankName: json['bankName']?.toString() ?? '',
+      accountNumber: json['accountNumber']?.toString() ?? '',
+      ifsc: json['ifsc']?.toString() ?? '',
+      branch: json['branch']?.toString() ?? '',
+      upi: json['upi']?.toString() ?? '',
+    );
+  }
+
   RegistrationFormState copyWith({
     String? fname,
     String? lname,
@@ -118,9 +189,41 @@ class RegistrationFormState {
 }
 
 class RegistrationFormNotifier extends Notifier<RegistrationFormState> {
+  static const String _storageKey = 'registration_form_draft';
+
   @override
   RegistrationFormState build() {
+    _restoreFromStorage();
     return RegistrationFormState();
+  }
+
+  Future<void> _restoreFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_storageKey);
+      if (saved != null && saved.isNotEmpty) {
+        final decoded = jsonDecode(saved);
+        if (decoded is Map<String, dynamic>) {
+          state = RegistrationFormState.fromJson(decoded);
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error restoring registration form draft: $e');
+      }
+    }
+  }
+
+  Future<void> _persistToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = jsonEncode(state.toJson());
+      await prefs.setString(_storageKey, encoded);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error saving registration form draft: $e');
+      }
+    }
   }
 
   void updateProfile({
@@ -138,19 +241,20 @@ class RegistrationFormNotifier extends Notifier<RegistrationFormState> {
     List<Map<String, dynamic>>? selectedServices,
   }) {
     this.state = this.state.copyWith(
-          fname: fname,
-          lname: lname,
-          email: email,
-          address: address,
-          city: city,
-          state: state,
-          pincode: pincode,
-          locality: locality,
-          exp: exp,
-          specialization: specialization,
-          gender: gender,
-          selectedServices: selectedServices,
-        );
+      fname: fname,
+      lname: lname,
+      email: email,
+      address: address,
+      city: city,
+      state: state,
+      pincode: pincode,
+      locality: locality,
+      exp: exp,
+      specialization: specialization,
+      gender: gender,
+      selectedServices: selectedServices,
+    );
+    _persistToStorage();
   }
 
   void updateKyc({
@@ -171,6 +275,7 @@ class RegistrationFormNotifier extends Notifier<RegistrationFormState> {
       panPath: panPath,
       dlPath: dlPath,
     );
+    _persistToStorage();
   }
 
   void updateBank({
@@ -189,10 +294,18 @@ class RegistrationFormNotifier extends Notifier<RegistrationFormState> {
       branch: branch,
       upi: upi,
     );
+    _persistToStorage();
   }
 
   void clearCache() {
     state = RegistrationFormState();
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.remove(_storageKey);
+    }).catchError((e) {
+      if (kDebugMode) {
+        debugPrint('Error clearing registration draft from prefs: $e');
+      }
+    });
   }
 }
 

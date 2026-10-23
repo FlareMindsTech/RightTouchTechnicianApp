@@ -32,6 +32,9 @@ class DashboardRepository {
     try {
       final response = await _client.get('/api/technician/wallet');
       final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        return {'balance': 0, 'pending': 0};
+      }
       _cache[cacheKey] = data;
       _cacheTime[cacheKey] = DateTime.now();
       return data;
@@ -51,6 +54,9 @@ class DashboardRepository {
     try {
       final response = await _client.get('/api/technician/wallet/transactions');
       final data = response.data;
+      if (data is! Map) {
+        return {'success': false, 'transactions': [], 'withdrawRequests': []};
+      }
       final result = {
         'success': true,
         'transactions': (data['result'] is List)
@@ -82,11 +88,15 @@ class DashboardRepository {
     try {
       final response = await _client.get(ApiConfig.walletHistoryEndpoint);
       final data = response.data;
+      if (data is! Map) {
+        return [];
+      }
       final history = data['result'] ?? data['history'] ?? [];
+      final listResult = history is List ? history : [];
 
-      _cache[cacheKey] = history;
+      _cache[cacheKey] = listResult;
       _cacheTime[cacheKey] = DateTime.now();
-      return history;
+      return listResult;
     } on DioException catch (e) {
       throw Exception(_getErrorMessage(e, 'Failed to fetch wallet history'));
     }
@@ -100,6 +110,9 @@ class DashboardRepository {
       );
       // Invalidate wallet caches
       invalidateCache();
+      if (response.data is! Map<String, dynamic>) {
+        return {'success': false};
+      }
       return response.data;
     } on DioException catch (e) {
       throw Exception(_getErrorMessage(e, 'Failed to request withdrawal'));

@@ -27,12 +27,12 @@ class _ProfileMenuItemState extends State<ProfileMenuItem> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Material(
-        color: Colors.transparent,
+        color: AppTheme.transparent,
         child: Ink(
           decoration: BoxDecoration(
             color: _isHovered
                 ? AppTheme.primaryColor.withValues(alpha: 0.08)
-                : Colors.grey.withValues(alpha: 0.05),
+                : AppTheme.grey.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: InkWell(
@@ -52,7 +52,7 @@ class _ProfileMenuItemState extends State<ProfileMenuItem> {
                   Icon(
                     widget.icon,
                     size: 24,
-                    color: widget.textColor ?? Colors.black,
+                    color: widget.textColor ?? AppTheme.black,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -61,7 +61,7 @@ class _ProfileMenuItemState extends State<ProfileMenuItem> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: widget.textColor ?? Colors.black,
+                        color: widget.textColor ?? AppTheme.black,
                       ),
                     ),
                   ),

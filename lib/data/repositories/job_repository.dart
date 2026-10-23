@@ -8,10 +8,11 @@ import 'package:right_touch/core/network/network_provider.dart';
 class JobRepository {
   final DioClient _client;
 
-  // Instance memory cache: Map<Key, List<dynamic>>
+  // Instance memory cache: Map<Key, List<dynamic>> with LRU eviction
   final Map<String, List<dynamic>> _cache = {};
   final Map<String, DateTime> _cacheTime = {};
   static const _cacheDuration = Duration(minutes: 5);
+  static const int _maxCacheEntries = 20;
 
   JobRepository(this._client);
 
@@ -22,12 +23,31 @@ class JobRepository {
     return DateTime.now().difference(timestamp) < _cacheDuration;
   }
 
+  void _putCache(String key, List<dynamic> data) {
+    if (_cache.containsKey(key)) {
+      _cache.remove(key);
+      _cacheTime.remove(key);
+    } else if (_cache.length >= _maxCacheEntries) {
+      final oldestKey = _cacheTime.entries
+          .reduce((a, b) => a.value.isBefore(b.value) ? a : b)
+          .key;
+      _cache.remove(oldestKey);
+      _cacheTime.remove(oldestKey);
+    }
+    _cache[key] = data;
+    _cacheTime[key] = DateTime.now();
+  }
+
   Future<List<dynamic>> getNearbyJobs(
     double lat,
     double lng, {
     bool forceRefresh = false,
   }) async {
-    final cacheKey = 'nearby_$lat$lng';
+    // Quantize GPS coordinates to ~2 decimal places (~1.1km grid) to prevent jitter cache explosion
+    final quantizedLat = lat.toStringAsFixed(2);
+    final quantizedLng = lng.toStringAsFixed(2);
+    final cacheKey = 'nearby_${quantizedLat}_$quantizedLng';
+
     if (!forceRefresh && _isCacheValid(cacheKey)) {
       return _cache[cacheKey]!;
     }
@@ -37,14 +57,14 @@ class JobRepository {
         ApiConfig.nearbyJobsEndpoint,
         queryParameters: {'latitude': lat, 'longitude': lng},
       );
-      final data = response.data['result'] ??
-          response.data['jobs'] ??
-          response.data['data'] ??
-          [];
+      final raw = response.data;
+      final data = (raw is Map)
+          ? (raw['result'] ?? raw['jobs'] ?? raw['data'] ?? [])
+          : (raw is List ? raw : []);
 
-      _cache[cacheKey] = data;
-      _cacheTime[cacheKey] = DateTime.now();
-      return data;
+      final listData = data is List ? data : [];
+      _putCache(cacheKey, listData);
+      return listData;
     } on DioException catch (e) {
       throw Exception(_getErrorMessage(e, 'Failed to fetch nearby jobs'));
     }
@@ -58,14 +78,14 @@ class JobRepository {
 
     try {
       final response = await _client.get(ApiConfig.myBroadcastJobsEndpoint);
-      final data = response.data['result'] ??
-          response.data['jobs'] ??
-          response.data['data'] ??
-          [];
+      final raw = response.data;
+      final data = (raw is Map)
+          ? (raw['result'] ?? raw['jobs'] ?? raw['data'] ?? [])
+          : (raw is List ? raw : []);
 
-      _cache[cacheKey] = data;
-      _cacheTime[cacheKey] = DateTime.now();
-      return data;
+      final listData = data is List ? data : [];
+      _putCache(cacheKey, listData);
+      return listData;
     } on DioException catch (e) {
       throw Exception(_getErrorMessage(e, 'Failed to fetch jobs'));
     }

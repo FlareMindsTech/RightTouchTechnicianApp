@@ -8,7 +8,7 @@ import 'package:right_touch/providers/job_provider.dart';
 import 'package:right_touch/providers/auth_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:right_touch/widgets/empty_state.dart';
-import 'package:right_touch/models/job.dart';
+import 'package:right_touch/data/models/job.dart';
 import 'package:right_touch/widgets/list_shimmer.dart';
 import 'package:right_touch/widgets/kyc_reminder_banner.dart';
 import 'package:right_touch/providers/socket_state_provider.dart';
@@ -16,6 +16,7 @@ import 'package:right_touch/providers/socket_state_provider.dart';
 import 'package:right_touch/screens/profile/help_support_screen.dart';
 import 'package:right_touch/utils/error_handler.dart';
 import 'package:right_touch/widgets/error_boundary.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 class NewJobsTab extends ConsumerStatefulWidget {
   const NewJobsTab({super.key});
@@ -59,7 +60,7 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
 
     if (result == true) {
       // Refresh after job completion or acceptance
-      _refreshJobs();
+      unawaited(_refreshJobs());
     }
   }
 
@@ -110,7 +111,7 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
             delegate: _StickyHeaderDelegate(
               height: 140,
               child: Container(
-                color: Colors.white,
+                color: AppTheme.white,
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +126,7 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                              color: AppTheme.black,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -142,10 +143,10 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: AppTheme.white,
                                     borderRadius: BorderRadius.circular(12),
                                     border:
-                                        Border.all(color: Colors.grey[200]!),
+                                        Border.all(color: AppTheme.grey[200]!),
                                   ),
                                   child: const Icon(
                                       Icons.notifications_outlined,
@@ -159,7 +160,7 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                                       width: 10,
                                       height: 10,
                                       decoration: const BoxDecoration(
-                                        color: Colors.orange,
+                                        color: AppTheme.orange,
                                         shape: BoxShape.circle,
                                       ),
                                     ),
@@ -204,7 +205,7 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                               width: 8,
                               height: 8,
                               decoration: const BoxDecoration(
-                                color: Colors.green,
+                                color: AppTheme.green,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -213,7 +214,7 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                               'Live Feed',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.green,
+                                color: AppTheme.green,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

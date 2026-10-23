@@ -45,7 +45,7 @@ class NetworkService {
     isConnected.value = result != ConnectivityResult.none;
 
     if (kDebugMode) {
-      print(
+      debugPrint(
         '🌐 Network Status: ${isConnected.value ? "Connected" : "Disconnected"} ($result)',
       );
     }

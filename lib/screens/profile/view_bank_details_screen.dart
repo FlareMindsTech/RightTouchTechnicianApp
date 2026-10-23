@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:right_touch/providers/auth_provider.dart';
 import 'package:right_touch/utils/app_theme.dart';
+import 'package:right_touch/widgets/rt_loader.dart';
 
 class ViewBankDetailsScreen extends ConsumerWidget {
   const ViewBankDetailsScreen({super.key});
@@ -39,7 +40,7 @@ class ViewBankDetailsScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: RtLoader()),
         orElse: () => _buildEmptyState(context),
       ),
     );
@@ -96,14 +97,14 @@ class ViewBankDetailsScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.account_balance, color: Colors.white, size: 32),
+              const Icon(Icons.account_balance, color: AppTheme.white, size: 32),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   bankName,
                   textAlign: TextAlign.end,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppTheme.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -115,7 +116,7 @@ class ViewBankDetailsScreen extends ConsumerWidget {
           const Text(
             "ACCOUNT NUMBER",
             style: TextStyle(
-              color: Colors.white70,
+              color: AppTheme.white70,
               fontSize: 12,
               letterSpacing: 1.2,
             ),
@@ -124,7 +125,7 @@ class ViewBankDetailsScreen extends ConsumerWidget {
           Text(
             accountNumber,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppTheme.white,
               fontSize: 22,
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
@@ -164,7 +165,7 @@ class ViewBankDetailsScreen extends ConsumerWidget {
         Text(
           label,
           style: const TextStyle(
-            color: Colors.white70,
+            color: AppTheme.white70,
             fontSize: 10,
             letterSpacing: 1,
           ),
@@ -173,7 +174,7 @@ class ViewBankDetailsScreen extends ConsumerWidget {
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppTheme.white,
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -188,20 +189,20 @@ class ViewBankDetailsScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.05),
+        color: AppTheme.blue.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.1)),
+        border: Border.all(color: AppTheme.blue.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+          const Icon(Icons.info_outline, color: AppTheme.blue, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               "To update your bank details, please contact the support team or visit the KYC section.",
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.blue.shade800,
+                color: AppTheme.blue.shade800,
                 height: 1.4,
               ),
             ),
@@ -217,7 +218,7 @@ class ViewBankDetailsScreen extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.account_balance_wallet_outlined,
-              size: 80, color: Colors.grey.shade300),
+              size: 80, color: AppTheme.grey.shade300),
           const SizedBox(height: 16),
           const Text(
             "No Bank Details Found",

@@ -13,23 +13,23 @@ class JobCardSkeleton extends StatelessWidget {
         color: const Color(0xFFF0F9F4),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Skeleton(width: 80, height: 20),
               Skeleton(width: 60, height: 20),
             ],
           ),
-          const SizedBox(height: 16),
-          const Skeleton(width: double.infinity, height: 24),
-          const SizedBox(height: 8),
-          const Skeleton(width: 150, height: 20),
-          const SizedBox(height: 4),
+          SizedBox(height: 16),
+          Skeleton(width: double.infinity, height: 24),
+          SizedBox(height: 8),
+          Skeleton(width: 150, height: 20),
+          SizedBox(height: 4),
           Row(
-            children: const [
+            children: [
               Skeleton(width: 14, height: 14),
               SizedBox(width: 4),
               Skeleton(width: 200, height: 16),

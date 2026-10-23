@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:right_touch/utils/ux_helpers.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 /// Custom exception classes for better error handling
 class AppException implements Exception {
@@ -62,16 +63,25 @@ class ErrorHandler {
 
       if (data is Map) {
         apiMessage = data['message']?.toString() ?? data['error']?.toString();
+        if (apiMessage == null || apiMessage.isEmpty) {
+          final errors = data['errors'];
+          if (errors is List && errors.isNotEmpty) {
+            final first = errors.first;
+            apiMessage = first is Map ? (first['message'] ?? first['msg'])?.toString() : first?.toString();
+          } else if (errors is Map && errors.isNotEmpty) {
+            final firstVal = errors.values.first;
+            apiMessage = (firstVal is List && firstVal.isNotEmpty)
+                ? firstVal.first?.toString()
+                : firstVal?.toString();
+          }
+        }
         errorCode = data['code']?.toString() ?? data['errorCode']?.toString();
       }
 
-      if (errorCode == 'ACCOUNT_DEACTIVATED' || errorCode == 'ACCOUNT_DELETED' || statusCode == 403) {
+      if (errorCode == 'ACCOUNT_DEACTIVATED' || errorCode == 'ACCOUNT_DELETED') {
         return 'Your account has been deactivated.\nPlease contact support.';
       }
 
-      if (statusCode == 401) {
-        return 'It looks like your session expired. Please log in again to continue.';
-      }
 
       if (statusCode == 404) {
         return 'User is not registered. Please register to continue.';
@@ -151,7 +161,7 @@ class ErrorHandler {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const Icon(Icons.check_circle_outline, color: AppTheme.white),
             const SizedBox(width: 12),
             Expanded(
               child: Text(message, style: const TextStyle(fontSize: 14)),
@@ -173,7 +183,7 @@ class ErrorHandler {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.info_outline, color: Colors.white),
+            const Icon(Icons.info_outline, color: AppTheme.white),
             const SizedBox(width: 12),
             Expanded(
               child: Text(message, style: const TextStyle(fontSize: 14)),

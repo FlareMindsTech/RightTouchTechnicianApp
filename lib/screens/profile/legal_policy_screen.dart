@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 class LegalPolicyScreen extends StatelessWidget {
   final String title;
@@ -13,19 +14,19 @@ class LegalPolicyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.white,
       appBar: AppBar(
         title: Text(
           title,
           style: const TextStyle(
-            color: Colors.black,
+            color: AppTheme.black,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -48,7 +49,7 @@ class LegalPolicyScreen extends StatelessWidget {
                 "© ${DateTime.now().year} Right Touch. All rights reserved.",
                 style: const TextStyle(
                   fontSize: 12,
-                  color: Colors.grey,
+                  color: AppTheme.grey,
                   fontStyle: FontStyle.italic,
                 ),
               ),

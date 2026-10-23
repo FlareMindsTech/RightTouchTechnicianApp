@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:right_touch/models/job.dart';
+import 'package:right_touch/data/models/job.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/widgets/empty_state.dart';
 import 'package:right_touch/widgets/fade_in_slide.dart';
@@ -35,12 +35,12 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
       appBar: AppBar(
         title: const Text(
           "Service History",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppTheme.black, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -67,7 +67,7 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
                 const Text(
                   "Total Earnings",
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: AppTheme.white70,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -81,7 +81,7 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
                           decimalDigits: 0,
                         ).format(dash.totalEarnings),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.white,
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                         ),
@@ -89,7 +89,7 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
                       orElse: () => const Text(
                         "₹0",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.white,
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                         ),
@@ -104,13 +104,13 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
                               'done'
                             ].contains(j.status.toLowerCase())).length} Jobs Completed",
                         style: const TextStyle(
-                          color: Colors.white70,
+                          color: AppTheme.white70,
                           fontSize: 14,
                         ),
                       ),
                       orElse: () => const Text(
                         "0 Jobs Completed",
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                        style: TextStyle(color: AppTheme.white70, fontSize: 14),
                       ),
                     ),
               ],
@@ -118,10 +118,10 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
           ),
 
           // List Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
             child: Row(
-              children: const [
+              children: [
                 Text(
                   "Recent Jobs",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -187,16 +187,16 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: AppTheme.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: AppTheme.grey.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,13 +218,13 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
+                  color: AppTheme.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
                   "Completed",
                   style: TextStyle(
-                    color: Colors.green,
+                    color: AppTheme.green,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -235,11 +235,11 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+              const Icon(Icons.person_outline, size: 16, color: AppTheme.grey),
               const SizedBox(width: 4),
               Text(
                 job.customerName ?? "Unknown Customer",
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
+                style: const TextStyle(color: AppTheme.grey, fontSize: 14),
               ),
             ],
           ),
@@ -251,7 +251,7 @@ class _ServiceHistoryScreenState extends ConsumerState<ServiceHistoryScreen> {
             children: [
               Text(
                 DateFormat('dd MMM yyyy').format(job.createdAt),
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: const TextStyle(color: AppTheme.grey, fontSize: 12),
               ),
               Text(
                 NumberFormat.currency(

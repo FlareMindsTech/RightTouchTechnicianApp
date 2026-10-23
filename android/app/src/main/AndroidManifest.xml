@@ -16,7 +16,10 @@
     <meta-data android:name="flutterEmbedding" android:value="2"/>
     <meta-data
         android:name="com.google.firebase.messaging.default_notification_channel_id"
-        android:value="high_importance_channel" />
+        android:value="righttouch_alerts" />
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@mipmap/ic_launcher" />
     
     <!-- Declare foreground service type for Android 14 compliance -->
     <service

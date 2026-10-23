@@ -56,7 +56,12 @@ void main() {
         verify(
           () => mockClient.post(
             '/api/user/signup',
-            data: {'mobileNumber': testIdentifier, 'role': 'Technician'},
+            data: {
+              'identifier': testIdentifier,
+              'role': 'Technician',
+              'termsAndServices': true,
+              'privacyPolicy': true,
+            },
           ),
         ).called(1);
       },
@@ -104,6 +109,7 @@ void main() {
       // Arrange
       when(() => mockClient.post(any(), data: any(named: 'data'))).thenThrow(
         DioException(
+          type: DioExceptionType.badResponse,
           response: Response(
             data: {'message': 'Invalid OTP'},
             statusCode: 400,

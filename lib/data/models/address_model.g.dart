@@ -1,7 +1,13 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'address_model.dart';
 
-_$AddressModelImpl _$$AddressModelImplFromJson(Map<String, dynamic> json) =>
-    _$AddressModelImpl(
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_AddressModel _$AddressModelFromJson(Map<String, dynamic> json) =>
+    _AddressModel(
       id: json['_id'] as String?,
       addressId: json['addressId'] as String?,
       label: json['label'] as String?,
@@ -21,7 +27,8 @@ _$AddressModelImpl _$$AddressModelImplFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['updatedAt'] as String),
     );
-Map<String, dynamic> _$$AddressModelImplToJson(_$AddressModelImpl instance) =>
+
+Map<String, dynamic> _$AddressModelToJson(_AddressModel instance) =>
     <String, dynamic>{
       '_id': instance.id,
       'addressId': instance.addressId,

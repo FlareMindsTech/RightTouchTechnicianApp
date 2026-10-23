@@ -9,7 +9,8 @@
     
     <!-- Production domain -->
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">righttouch-backend-fn9z.onrender.com</domain>
+        <domain includeSubdomains="true">backend-pa6p.onrender.com</domain>
+        <domain includeSubdomains="true">righttouchservernew-727889857503.asia-south1.run.app</domain>
         <!-- Add certificate pinning here if you have the certificates -->
         <!-- <pin-set>
             <pin digest="SHA-256">base64EncodedCertificateHash</pin>

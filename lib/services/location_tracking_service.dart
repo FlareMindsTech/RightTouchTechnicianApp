@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
-import 'package:right_touch/services/auth_service.dart';
+import 'package:right_touch/data/repositories/auth_repository.dart';
 import 'package:right_touch/services/socket_service.dart';
 import 'package:right_touch/widgets/location_permission_dialog.dart';
 import 'package:right_touch/core/routing/app_router.dart';
@@ -12,7 +12,11 @@ import 'package:right_touch/providers/socket_provider.dart';
 
 final locationServiceProvider = Provider<LocationTrackingService>((ref) {
   final socketService = ref.watch(socketServiceProvider);
-  final service = LocationTrackingService(socketService: socketService);
+  final authRepository = ref.watch(authRepositoryProvider);
+  final service = LocationTrackingService(
+    socketService: socketService,
+    authRepository: authRepository,
+  );
   ref.onDispose(() {
     service.dispose();
   });
@@ -21,14 +25,18 @@ final locationServiceProvider = Provider<LocationTrackingService>((ref) {
 
 class LocationTrackingService with WidgetsBindingObserver {
   Timer? _timer;
-  final AuthService _authService = AuthService();
+  final AuthRepository _authRepository;
   final SocketService _socketService;
   bool _isTracking = false;
 
-  LocationTrackingService({required SocketService socketService})
-      : _socketService = socketService {
+  LocationTrackingService({
+    required SocketService socketService,
+    required AuthRepository authRepository,
+  })  : _socketService = socketService,
+        _authRepository = authRepository {
     WidgetsBinding.instance.addObserver(this);
   }
+
 
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -59,11 +67,15 @@ class LocationTrackingService with WidgetsBindingObserver {
       if (kDebugMode) {
         debugPrint('Location services are disabled.');
       }
-      // Attempt to open settings to enable location services
-      await Geolocator.openLocationSettings();
-      // Re-check after returning from settings (best effort)
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
+      // Require explicit user consent via rationale dialog before opening OS settings
+      final bool? userConsented = await _showServiceRationaleDialog();
+      if (userConsented == true) {
+        await Geolocator.openLocationSettings();
+        serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          return;
+        }
+      } else {
         return;
       }
     }
@@ -94,9 +106,6 @@ class LocationTrackingService with WidgetsBindingObserver {
 
     _isTracking = true;
 
-    // Ensure auth token is loaded from storage so that API calls can succeed
-    await _authService.loadToken();
-
     _startTimer();
   }
 
@@ -125,13 +134,14 @@ class LocationTrackingService with WidgetsBindingObserver {
       );
 
       // Update profile with location coordinates via REST
-      await _authService.updateProfile({
+      await _authRepository.updateTechnicianProfile({
         'location': {
           'coordinates': [position.longitude, position.latitude],
           'type': 'Point',
         },
         'lastLocationUpdate': DateTime.now().toIso8601String(),
       });
+
 
       // Emit via Socket.IO for real-time updates (uses Riverpod-managed service)
       _socketService.updateLocation(
@@ -149,6 +159,17 @@ class LocationTrackingService with WidgetsBindingObserver {
         debugPrint('❌ Error sending location: $e');
       }
     }
+  }
+
+  Future<bool?> _showServiceRationaleDialog() async {
+    final context = rootNavigatorKey.currentContext;
+    if (context != null) {
+      return await showDialog<bool>(
+        context: context,
+        builder: (context) => const LocationServiceRationaleDialog(),
+      );
+    }
+    return false;
   }
 
   void _showPermissionDialog() {

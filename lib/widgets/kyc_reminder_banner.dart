@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 class KycReminderBanner extends StatelessWidget {
   final String message;
@@ -16,20 +17,20 @@ class KycReminderBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: AppTheme.orange.shade50,
         border: Border(
-          bottom: BorderSide(color: Colors.orange.shade200, width: 1),
+          bottom: BorderSide(color: AppTheme.orange.shade200, width: 1),
         ),
       ),
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800),
+          Icon(Icons.warning_amber_rounded, color: AppTheme.orange.shade800),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
               style: TextStyle(
-                color: Colors.orange.shade900,
+                color: AppTheme.orange.shade900,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -39,8 +40,8 @@ class KycReminderBanner extends StatelessWidget {
           TextButton(
             onPressed: onTap,
             style: TextButton.styleFrom(
-              backgroundColor: Colors.orange.shade800,
-              foregroundColor: Colors.white,
+              backgroundColor: AppTheme.orange.shade800,
+              foregroundColor: AppTheme.white,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,

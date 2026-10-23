@@ -6,6 +6,12 @@ plugins {
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+val googleServicesFile = file("google-services.json")
+if (googleServicesFile.exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.righttouchpartner.app"
     compileSdk = 36
@@ -26,21 +32,40 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
+        ndk {
+            abiFilters.addAll(setOf("armeabi-v7a", "arm64-v8a", "x86_64"))
+        }
+        externalNativeBuild {
+            cmake {
+                arguments("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON")
+            }
+        }
     }
 
     signingConfigs {
         create("release") {
             val keystorePropertiesFile = rootProject.file("key.properties")
-            if (keystorePropertiesFile.exists()) {
-                val keystoreProperties = Properties()
-                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-                
-                storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
-                storePassword = keystoreProperties.getProperty("storePassword")
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
+            if (!keystorePropertiesFile.exists()) {
+                throw GradleException("Release build failed: key.properties file not found at ${keystorePropertiesFile.absolutePath}")
             }
-        } }
+            val keystoreProperties = Properties()
+            keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+            
+            val keyStoreFilePath = keystoreProperties.getProperty("storeFile") 
+                ?: throw GradleException("Release build failed: 'storeFile' property missing in key.properties")
+            val resolvedStoreFile = file(keyStoreFilePath)
+            if (!resolvedStoreFile.exists()) {
+                throw GradleException("Release build failed: keystore file not found at ${resolvedStoreFile.absolutePath}")
+            }
+            storeFile = resolvedStoreFile
+            storePassword = keystoreProperties.getProperty("storePassword") 
+                ?: throw GradleException("Release build failed: 'storePassword' missing in key.properties")
+            keyAlias = keystoreProperties.getProperty("keyAlias") 
+                ?: throw GradleException("Release build failed: 'keyAlias' missing in key.properties")
+            keyPassword = keystoreProperties.getProperty("keyPassword") 
+                ?: throw GradleException("Release build failed: 'keyPassword' missing in key.properties")
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -49,11 +74,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (signingConfigs.getByName("release").storeFile != null) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

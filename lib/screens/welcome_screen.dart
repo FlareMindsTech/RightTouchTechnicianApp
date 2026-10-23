@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -36,7 +37,7 @@ class WelcomeScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: AppTheme.black,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -46,7 +47,7 @@ class WelcomeScreen extends StatelessWidget {
                 "Start accepting jobs, manage your schedule, and grow your business with Right Touch.",
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[600],
+                  color: AppTheme.grey[600],
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -112,13 +113,13 @@ class WelcomeScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: AppTheme.black,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 description,
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 13, color: AppTheme.grey[600]),
               ),
             ],
           ),

@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:right_touch/data/repositories/auth_repository.dart';
 import 'package:right_touch/utils/error_handler.dart';
+import 'package:right_touch/widgets/rt_loader.dart';
 import '../../providers/auth_provider.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -32,9 +35,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              _handleDelete();
+              unawaited(_handleDelete());
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.red),
             child: const Text('Delete'),
           ),
         ],
@@ -55,7 +58,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Account deleted successfully.'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppTheme.green,
             ),
           );
           // Log out and go to login
@@ -83,9 +86,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Delete Account'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: AppTheme.black,
       ),
       body: SafeArea(
         child: Padding(
@@ -95,7 +98,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             children: [
               const Icon(
                 Icons.warning_amber_rounded,
-                color: Colors.red,
+                color: AppTheme.red,
                 size: 64,
               ),
               const SizedBox(height: 24),
@@ -104,7 +107,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: AppTheme.black,
                 ),
               ),
               const SizedBox(height: 16),
@@ -113,7 +116,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: AppTheme.black87,
                 ),
               ),
               const SizedBox(height: 12),
@@ -127,7 +130,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
               const SizedBox(height: 32),
               const Text(
                 'If you just want to take a break, you can simply go offline or logout.',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: AppTheme.grey),
               ),
               const Spacer(),
               SizedBox(
@@ -138,14 +141,14 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                       ? null
                       : () => _showDeleteConfirmation(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppTheme.red,
+                    foregroundColor: AppTheme.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const RtLoader.button(color: AppTheme.white)
                       : const Text(
                           'Delete My Account',
                           style: TextStyle(
@@ -164,7 +167,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                   child: const Text(
                     'Cancel',
                     style: TextStyle(
-                      color: Colors.grey,
+                      color: AppTheme.grey,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -191,7 +194,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 14, color: Colors.black54),
+              style: const TextStyle(fontSize: 14, color: AppTheme.black54),
             ),
           ),
         ],

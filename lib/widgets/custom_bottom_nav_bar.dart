@@ -69,12 +69,12 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
             boxShadow: Theme.of(context).brightness == Brightness.light
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
+                      color: AppTheme.black.withValues(alpha: 0.06),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
+                      color: AppTheme.black.withValues(alpha: 0.02),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -128,17 +128,21 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                   children: List.generate(_itemCount, (index) {
                     final isSelected = widget.currentIndex == index;
                     return Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          if (!isSelected) {
-                            widget.onTap(index);
-                            HapticFeedback.selectionClick();
-                          }
-                        },
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                      child: Semantics(
+                        button: true,
+                        label: '${_labels[index]} tab',
+                        selected: isSelected,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            if (!isSelected) {
+                              widget.onTap(index);
+                              HapticFeedback.selectionClick();
+                            }
+                          },
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
                             AnimatedScale(
                               scale: isSelected ? 1.1 : 1.0,
                               duration: const Duration(milliseconds: 200),
@@ -147,30 +151,38 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                                 _icons[index],
                                 color: isSelected
                                     ? AppTheme.primaryColor
-                                    : Colors.grey.shade400,
+                                    : AppTheme.grey.shade400,
                                 size: 24,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 200),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: isSelected
-                                    ? AppTheme.primaryColor
-                                    : Colors.grey.shade400,
-                                letterSpacing: 0.1,
-                                fontFamily: 'Inter',
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 200),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? AppTheme.primaryColor
+                                      : AppTheme.grey.shade400,
+                                  letterSpacing: 0.1,
+                                  fontFamily: 'Inter',
+                                ),
+                                child: Text(
+                                  _labels[index],
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              child: Text(_labels[index]),
                             ),
                           ],
                         ),
                       ),
-                    );
+                    ),
+                  );
                   }),
                 ),
               ),

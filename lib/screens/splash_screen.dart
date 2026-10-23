@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:right_touch/providers/auth_provider.dart';
 import 'package:right_touch/utils/app_theme.dart';
+import 'package:right_touch/widgets/rt_loader.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -19,31 +20,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _checkInitialState() async {
-    // Wait a bit for the splash screen to be visible
+    // Wait for splash screen display
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
-    await ref.read(authProvider.notifier).checkAuth();
-
-    // Fallback: If still on splash screen after checkAuth completes, force navigate to login/onboarding
-    if (mounted) {
-      final authState = ref.read(authProvider);
-      authState.maybeWhen(
-        authenticated: (_) {}, // Handled by GoRouter redirect
-        orElse: () {
-          ref.read(authProvider.notifier).hasSeenOnboarding().then((seen) {
-            if (!mounted) return;
-            context.go(seen ? '/login' : '/onboarding');
-          });
-        },
-      );
-    }
+    final authState = ref.read(authProvider);
+    authState.maybeWhen(
+      authenticated: (_) {}, // Automatically redirected to dashboard by GoRouter
+      loading: () {}, // Will be redirected once AuthNotifier finishes checking
+      initial: () {},
+      orElse: () {
+        ref.read(authProvider.notifier).hasSeenOnboarding().then((seen) {
+          if (!mounted) return;
+          context.go(seen ? '/login' : '/onboarding');
+        });
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -61,13 +59,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
-            ),
+            const RtLoader(size: 40),
           ],
         ),
       ),
     );
   }
 }
+

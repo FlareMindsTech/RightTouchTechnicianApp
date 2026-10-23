@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 class ListShimmer extends StatelessWidget {
   final int itemCount;
@@ -14,12 +15,12 @@ class ListShimmer extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Shimmer.fromColors(
-            baseColor: Colors.grey[200]!,
-            highlightColor: Colors.grey[50]!,
+            baseColor: AppTheme.grey[200]!,
+            highlightColor: AppTheme.grey[50]!,
             child: Container(
               height: 100,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.white,
                 borderRadius: BorderRadius.circular(12),
               ),
             ),

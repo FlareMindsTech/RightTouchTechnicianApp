@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:right_touch/data/repositories/auth_repository.dart'
     as auth_repo;
 import 'package:right_touch/providers/auth_provider.dart';
+import 'package:right_touch/screens/profile/widgets/skill_selection_sheet.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/utils/error_handler.dart';
+import 'package:right_touch/widgets/rt_loader.dart';
 
 class EditSkillsScreen extends ConsumerStatefulWidget {
   const EditSkillsScreen({super.key});
@@ -16,7 +19,6 @@ class EditSkillsScreen extends ConsumerStatefulWidget {
 class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _expController = TextEditingController();
-  final TextEditingController _skillSearchController = TextEditingController();
 
   List<dynamic> _allServices = [];
   Map<String, dynamic>? _selectedService;
@@ -32,7 +34,6 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
   @override
   void dispose() {
     _expController.dispose();
-    _skillSearchController.dispose();
     super.dispose();
   }
 
@@ -123,7 +124,9 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
 
         if (name != null) return name;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[EditSkillsScreen] Error resolving skill name: $e');
+    }
     return skillId;
   }
 
@@ -159,7 +162,7 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
           _expController.clear();
           setState(() => _selectedService = null);
           // Refresh auth state to show new skills
-          ref.read(authProvider.notifier).refreshProfile();
+          unawaited(ref.read(authProvider.notifier).refreshProfile());
         } else {
           ErrorHandler.showError(
             context,
@@ -182,106 +185,11 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            final searchText = _skillSearchController.text.toLowerCase();
-            final filteredServices = _allServices.where((service) {
-              final name = (service['serviceName']?.toString() ??
-                      service['name']?.toString() ??
-                      '')
-                  .toLowerCase();
-              return name.contains(searchText);
-            }).toList();
-
-            return DraggableScrollableSheet(
-              initialChildSize: 0.7,
-              minChildSize: 0.5,
-              maxChildSize: 0.95,
-              expand: false,
-              builder: (context, scrollController) {
-                return Column(
-                  children: [
-                    Container(
-                      height: 5,
-                      width: 40,
-                      margin: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: TextField(
-                        controller: _skillSearchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search skills...',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                        ),
-                        onChanged: (val) {
-                          setSheetState(() {});
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: filteredServices.isEmpty
-                          ? const Center(child: Text("No skills found"))
-                          : ListView.builder(
-                              controller: scrollController,
-                              itemCount: filteredServices.length,
-                              itemBuilder: (context, index) {
-                                final service = filteredServices[index];
-                                final name =
-                                    service['serviceName']?.toString() ??
-                                        service['name']?.toString() ??
-                                        'N/A';
-                                final id = service['_id']?.toString() ??
-                                    service['id']?.toString();
-                                final isSelected = _selectedService != null &&
-                                    (_selectedService!['_id'] == id ||
-                                        _selectedService!['id'] == id);
-
-                                return ListTile(
-                                  title: Text(
-                                    name,
-                                    style: TextStyle(
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                      color: isSelected
-                                          ? AppTheme.primaryColor
-                                          : Colors.black,
-                                    ),
-                                  ),
-                                  trailing: isSelected
-                                      ? const Icon(
-                                          Icons.check,
-                                          color: AppTheme.primaryColor,
-                                        )
-                                      : null,
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedService = service;
-                                    });
-                                    Navigator.pop(context);
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-      },
+      builder: (context) => SkillSelectionSheet(
+        allServices: _allServices,
+        selectedService: _selectedService,
+        onSelect: (service) => setState(() => _selectedService = service),
+      ),
     );
   }
 
@@ -297,12 +205,12 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Skills'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppTheme.white,
+        foregroundColor: AppTheme.black,
         elevation: 0,
       ),
       body: _isFetching
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: RtLoader())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -316,7 +224,7 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
                   if (skills.isEmpty)
                     const Text(
                       "No skills added yet",
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppTheme.grey),
                     )
                   else
                     Wrap(
@@ -371,8 +279,8 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
                                   : 'Select Skill',
                               style: TextStyle(
                                 color: _selectedService != null
-                                    ? Colors.black
-                                    : Colors.grey[600],
+                                    ? AppTheme.black
+                                    : AppTheme.grey[600],
                               ),
                             ),
                           ),
@@ -396,7 +304,7 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
                               return 'Invalid number';
                             }
                             if (yrs < 0) return 'Experience cannot be negative';
-                            if (yrs > 50) return 'Experience cannot exceed 50 years';
+                            if (yrs > 15) return 'Experience cannot exceed 15 years';
                             return null;
                           },
                         ),
@@ -413,13 +321,13 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
                               ),
                             ),
                             child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
+                                ? const RtLoader.button(
+                                    color: AppTheme.white,
                                   )
                                 : const Text(
                                     'Add Skill',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: AppTheme.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),

@@ -4,6 +4,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../widgets/rt_loader.dart';
+import 'ux_dialog.dart';
+import 'package:right_touch/utils/app_theme.dart';
+
+export 'ux_dialog.dart';
 
 /// Haptic Feedback Helper
 class HapticHelper {
@@ -45,7 +50,7 @@ class UXSnackBar {
           children: [
             Icon(
               isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
+              color: AppTheme.white,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -53,14 +58,14 @@ class UXSnackBar {
             ),
           ],
         ),
-        backgroundColor: isError ? Colors.grey.shade800 : Colors.green,
+        backgroundColor: isError ? AppTheme.grey.shade800 : AppTheme.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: duration,
         action: onRetry != null
             ? SnackBarAction(
                 label: 'Try Again',
-                textColor: Colors.blueAccent.shade100,
+                textColor: AppTheme.blueAccent.shade100,
                 onPressed: () {
                   HapticHelper.light();
                   onRetry();
@@ -154,14 +159,7 @@ class HapticButton extends StatelessWidget {
             },
       style: style,
       child: isLoading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
+          ? const RtLoader.button(color: AppTheme.white)
           : child,
     );
   }
@@ -200,7 +198,7 @@ class LoadingOverlay extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(),
+                    const RtLoader(),
                     if (loadingMessage != null) ...[
                       const SizedBox(height: 16),
                       Text(
@@ -232,264 +230,13 @@ class UXBottomSheet {
       isScrollControlled: true,
       isDismissible: isDismissible,
       enableDrag: enableDrag,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppTheme.transparent,
       builder: (context) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: child,
-      ),
-    );
-  }
-}
-
-/// Confirmation Dialog with Haptic
-class UXDialog {
-  static Future<bool> confirm({
-    required BuildContext context,
-    required String title,
-    required String message,
-    String confirmText = 'Confirm',
-    String cancelText = 'Cancel',
-    bool isDangerous = false,
-  }) async {
-    HapticHelper.medium();
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {
-              HapticHelper.light();
-              Navigator.pop(context, false);
-            },
-            child: Text(cancelText),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (isDangerous) {
-                HapticHelper.heavy();
-              } else {
-                HapticHelper.medium();
-              }
-              Navigator.pop(context, true);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isDangerous ? Colors.red : null,
-            ),
-            child: Text(
-              confirmText,
-              style: TextStyle(color: isDangerous ? Colors.white : null),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
-  }
-
-  /// Global Error Dialog pop-up (For critical failures)
-  static void showError({
-    required BuildContext context,
-    required String message,
-    String title = 'Important',
-  }) {
-    HapticHelper.error();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.info_outline,
-                color: Colors.orange,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Got it',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Global Notice Dialog pop-up (For non-critical informational boundaries)
-  static void showNotice({
-    required BuildContext context,
-    required String message,
-    String title = 'Notice',
-  }) {
-    HapticHelper.light();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.lightbulb_outline,
-                color: Colors.blue,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Continue',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Custom styled Action Dialog (Auth transitions, etc.)
-  static void showActionDialog({
-    required BuildContext context,
-    required String title,
-    required String message,
-    required String primaryActionText,
-    required VoidCallback onPrimaryAction,
-    String? cancelText = 'Cancel',
-  }) {
-    HapticHelper.medium();
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 10,
-        backgroundColor: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              // Title
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                  color: Color(0xFF1F2937),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Message
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF4B5563),
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 28),
-              // Buttons
-              Row(
-                children: [
-                  if (cancelText != null)
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          cancelText,
-                          style: const TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (cancelText != null) const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticHelper.medium();
-                        Navigator.pop(context);
-                        onPrimaryAction();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2E7D32), // Green
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        primaryActionText,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -548,18 +295,18 @@ class SwipeableCard extends StatelessWidget {
       },
       background: onArchive != null
           ? Container(
-              color: Colors.blue,
+              color: AppTheme.blue,
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.only(left: 20),
-              child: const Icon(Icons.archive, color: Colors.white),
+              child: const Icon(Icons.archive, color: AppTheme.white),
             )
           : null,
       secondaryBackground: onDelete != null
           ? Container(
-              color: Colors.red,
+              color: AppTheme.red,
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 20),
-              child: const Icon(Icons.delete, color: Colors.white),
+              child: const Icon(Icons.delete, color: AppTheme.white),
             )
           : null,
       child: child,

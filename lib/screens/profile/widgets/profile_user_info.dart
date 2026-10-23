@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 class ProfileUserInfo extends StatelessWidget {
   final String name;
@@ -23,7 +24,7 @@ class ProfileUserInfo extends StatelessWidget {
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppTheme.black,
           ),
         ),
         const SizedBox(height: 4),
@@ -65,7 +66,7 @@ class ProfileUserInfo extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
-            color: Colors.black87,
+            color: AppTheme.black87,
           ),
         ),
         if (count > 0) ...[
@@ -74,7 +75,7 @@ class ProfileUserInfo extends StatelessWidget {
             "($count)",
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppTheme.grey[600],
             ),
           ),
         ],

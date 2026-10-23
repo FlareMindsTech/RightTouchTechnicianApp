@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:right_touch/utils/app_theme.dart';
+import 'package:right_touch/widgets/rt_loader.dart';
 
 class ProfileHeader extends StatelessWidget {
   final bool isOnline;
@@ -24,22 +24,18 @@ class ProfileHeader extends StatelessWidget {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: AppTheme.black,
           ),
         ),
         Row(
           children: [
             if (isLoading)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+              const RtLoader(size: 20)
             else
               Text(
                 isOnline ? "Online" : "Offline",
                 style: TextStyle(
-                  color: isOnline ? AppTheme.primaryColor : Colors.grey,
+                  color: isOnline ? AppTheme.primaryColor : AppTheme.grey,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),

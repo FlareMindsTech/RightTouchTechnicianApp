@@ -2,21 +2,33 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:right_touch/config/api_config.dart';
+import 'package:right_touch/main.dart';
 
 class DioClient {
   final Dio _dio;
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final FlutterSecureStorage _secureStorage;
+  final Future<void> Function()? onUnauthorized;
+  final Future<bool> Function()? onRefreshToken;
+  final void Function(String message)? onForbidden;
+  bool _isLoggingOut = false;
 
-  DioClient()
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: ApiConfig.baseUrl,
-            connectTimeout: const Duration(seconds: 20),
-            receiveTimeout: const Duration(seconds: 20),
-            sendTimeout: const Duration(seconds: 20),
-            headers: {'Accept': 'application/json'},
-          ),
-        ) {
+  DioClient({
+    this.onUnauthorized,
+    this.onRefreshToken,
+    this.onForbidden,
+    FlutterSecureStorage? secureStorage,
+    Dio? dio,
+  })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: ApiConfig.baseUrl,
+                connectTimeout: const Duration(seconds: 20),
+                receiveTimeout: const Duration(seconds: 20),
+                sendTimeout: const Duration(seconds: 20),
+                headers: {'Accept': 'application/json'},
+              ),
+            ) {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -59,10 +71,11 @@ class DioClient {
           }
           return handler.next(response);
         },
-        onError: (err, handler) {
+        onError: (err, handler) async {
+          final statusCode = err.response?.statusCode;
           if (kDebugMode) {
             debugPrint(
-              '❌ ERROR[${err.response?.statusCode}] => PATH: ${err.requestOptions.path}',
+              '❌ ERROR[$statusCode] => PATH: ${err.requestOptions.path}',
             );
             debugPrint('   Type: ${err.type}');
             debugPrint('   Message: ${err.message}');
@@ -71,11 +84,50 @@ class DioClient {
               debugPrint('   Response Data: ${err.response?.data}');
             }
           }
+
+          if (statusCode == 401) {
+            bool refreshed = false;
+            if (onRefreshToken != null) {
+              try {
+                refreshed = await onRefreshToken!();
+              } catch (_) {
+                refreshed = false;
+              }
+            }
+
+            if (!refreshed && !_isLoggingOut) {
+              _isLoggingOut = true;
+              try {
+                await _secureStorage.delete(key: 'auth_token');
+                await _secureStorage.delete(key: 'technician_id');
+                await _secureStorage.delete(key: 'cached_profile');
+                if (onUnauthorized != null) {
+                  await onUnauthorized!();
+                }
+              } catch (e) {
+                if (kDebugMode) {
+                  debugPrint('Error during 401 forced logout: $e');
+                }
+              } finally {
+                _isLoggingOut = false;
+              }
+            }
+          } else if (statusCode == 403) {
+            const forbiddenMessage =
+                'No permission: You do not have access to perform this action.';
+            if (onForbidden != null) {
+              onForbidden!(forbiddenMessage);
+            } else {
+              GlobalScaffold.showSnackBar(forbiddenMessage, isError: true);
+            }
+          }
+
           return handler.next(err);
         },
       ),
     );
   }
+
 
   Dio get dio => _dio;
 

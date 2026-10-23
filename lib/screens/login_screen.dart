@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,8 +6,10 @@ import 'package:right_touch/data/repositories/auth_repository.dart';
 import 'package:right_touch/utils/error_handler.dart';
 import 'package:right_touch/utils/ux_helpers.dart';
 import 'package:right_touch/providers/auth_provider.dart';
-import 'package:right_touch/data/models/auth_state.dart';
 import 'package:right_touch/utils/app_theme.dart';
+import 'package:right_touch/utils/validators.dart';
+import 'package:right_touch/widgets/auth/auth_brand_header.dart';
+import 'package:right_touch/widgets/rt_loader.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   final String? identifier;
@@ -19,15 +22,32 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _identifierController;
+  bool _isPhoneComplete = false;
 
   @override
   void initState() {
     super.initState();
     _identifierController = TextEditingController(text: widget.identifier);
+    _isPhoneComplete = _checkPhoneComplete(_identifierController.text);
+    _identifierController.addListener(_onPhoneChanged);
+  }
+
+  void _onPhoneChanged() {
+    final complete = _checkPhoneComplete(_identifierController.text);
+    if (complete != _isPhoneComplete) {
+      setState(() {
+        _isPhoneComplete = complete;
+      });
+    }
+  }
+
+  bool _checkPhoneComplete(String text) {
+    return text.trim().replaceAll(RegExp(r'\D'), '').length == 10;
   }
 
   @override
   void dispose() {
+    _identifierController.removeListener(_onPhoneChanged);
     _identifierController.dispose();
     super.dispose();
   }
@@ -118,46 +138,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              Expanded(
+              const Expanded(
                 flex: 2,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Hero(
-                      tag: 'logo',
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        width: 180,
-                        errorBuilder: (context, error, stackTrace) => Column(
-                          children: [
-                            Text(
-                              "RIGHT TOUCH",
-                              style: TextStyle(
-                                color: AppTheme.primaryColor,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 32,
-                                letterSpacing: 1.2,
-                                height: 1.0,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "PARTNER",
-                              style: TextStyle(
-                                color:
-                                    AppTheme.textPrimary.withValues(alpha: 0.8),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                letterSpacing: 6.0,
-                                height: 1.0,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                child: AuthBrandHeader(),
               ),
               Expanded(
                 flex: 4,
@@ -165,20 +148,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24.0,
-                    vertical: 40.0,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(AppTheme.borderRadiusXLarge),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 20,
-                        offset: Offset(0, -5),
-                      ),
-                    ],
+                    vertical: 24.0,
                   ),
                   child: SingleChildScrollView(
                     child: Form(
@@ -190,64 +160,94 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             "Welcome Back!",
                             style: TextStyle(
                               fontSize: 28,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.bold,
                               color: Color(0xFF111827),
                               letterSpacing: -0.5,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
+                          const Text(
                             "Login to your technician account",
                             style: TextStyle(
-                              fontSize: 16,
-                              color: AppTheme.textSecondary,
-                              height: 1.5,
+                              fontSize: 15,
+                              color: Color(0xFF6B7280),
+                              height: 1.4,
                             ),
                           ),
-                          const SizedBox(height: 48),
+                          const SizedBox(height: 36),
                           TextFormField(
                             controller: _identifierController,
                             keyboardType: TextInputType.phone,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [AutofillHints.telephoneNumber],
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            inputFormatters: [Validators.digitsOnlyFormatter],
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              letterSpacing: 1,
+                              letterSpacing: 0.5,
                             ),
                             maxLength: 10,
                             decoration: InputDecoration(
-                              hintText: 'Enter mobile number',
-                              labelText: 'Mobile Number',
+                              hintText: 'Mobile Number',
                               counterText: '',
-                              prefixIcon: Container(
-                                padding: const EdgeInsets.all(12),
+                              filled: true,
+                              fillColor: AppTheme.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 18,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE5E7EB),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE5E7EB),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF8CD8AE),
+                                  width: 1.5,
+                                ),
+                              ),
+                              prefixIcon: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 14),
                                 child: Icon(
                                   Icons.phone_android_rounded,
-                                  color: AppTheme.textSecondary,
+                                  color: Color(0xFF6B7280),
                                   size: 22,
                                 ),
                               ),
                             ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Please enter your mobile number';
-                              }
-                              if (value.length != 10) {
-                                return 'Mobile number must be 10 digits';
-                              }
-                              return null;
-                            },
+                            validator: Validators.validateIndianMobile,
                           ),
-                          const SizedBox(height: 48),
+                          const SizedBox(height: 32),
                           SizedBox(
                             width: double.infinity,
-                            height: 60,
+                            height: 56,
                             child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isPhoneComplete
+                                    ? AppTheme.primaryColor
+                                    : const Color(0xFF8CD8AE),
+                                foregroundColor: AppTheme.white,
+                                elevation: _isPhoneComplete ? 2 : 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
                               onPressed: isLoading
                                   ? null
                                   : () async {
-                                      if (_formKey.currentState!.validate()) {
+                                      if (_formKey.currentState?.validate() ?? false) {
                                         final identifier =
-                                            _identifierController.text.trim();
+                                            Validators.normalizeMobile(_identifierController.text);
                                         setState(() => _localLoading = true);
                                         try {
                                           final result = await ref
@@ -265,13 +265,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             setState(
                                               () => _localLoading = false,
                                             );
-                                            context.push(
+                                            unawaited(context.push(
                                               '/otp',
                                               extra: {
                                                 'identifier': identifier,
                                                 'isLogin': true,
                                               },
-                                            );
+                                            ));
                                           } else {
                                             if (!context.mounted) return;
                                             setState(
@@ -350,17 +350,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       }
                                     },
                               child: isLoading
-                                  ? const SizedBox(
-                                      height: 24,
-                                      width: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
-                                      ),
-                                    )
+                                  ? const RtLoader.button(color: AppTheme.white)
                                   : const Text(
                                       "Get OTP",
                                       style: TextStyle(
@@ -375,7 +365,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             child: Text.rich(
                               TextSpan(
                                 text: "Don't have an account? ",
-                                style: TextStyle(color: AppTheme.textSecondary),
+                                style: const TextStyle(color: AppTheme.textSecondary),
                                 children: [
                                   WidgetSpan(
                                     child: GestureDetector(

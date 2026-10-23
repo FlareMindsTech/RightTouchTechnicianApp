@@ -1,0 +1,62 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  build_ios:
+    name: Build iOS
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - name: Create .env file
+        run: |
+          if [ ! -f .env ]; then
+            echo "API_URL=https://api.example.com" > .env
+            echo "Created dummy .env file for build"
+          fi
+
+      - name: Get dependencies
+        run: |
+          flutter pub get
+          flutter precache --ios
+
+      - name: Build iOS (No Codesign)
+        run: |
+          # Inject a generic Development Team ID to satisfy Xcode requirements during unsigned build
+          # This is necessary because some plugins require a team to be set even for unsigned builds
+          perl -i -pe 's/PRODUCT_BUNDLE_IDENTIFIER = (.*);/PRODUCT_BUNDLE_IDENTIFIER = $1; DEVELOPMENT_TEAM = "58A689L68C";/g' ios/Runner.xcodeproj/project.pbxproj
+          
+          # This command will automatically run 'pod install' if a Podfile exists or is generated
+          flutter build ios --release --no-codesign
+        
+      - name: Create IPA
+        run: |
+          mkdir -p Payload
+          # The build output is usually in build/ios/iphoneos/Runner.app
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then
+            cp -r build/ios/iphoneos/Runner.app Payload/
+            zip -r Runner.ipa Payload
+          else
+            echo "Error: Runner.app not found in expected location."
+            exit 1
+          fi
+        
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: Runner.ipa

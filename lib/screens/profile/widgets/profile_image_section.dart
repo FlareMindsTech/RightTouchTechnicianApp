@@ -39,7 +39,7 @@ class ProfileImageSection extends StatelessWidget {
                         ? CachedNetworkImageProvider(profileImageUrl!)
                         : null,
                 child: imageFile == null && (profileImageUrl?.isEmpty ?? true)
-                    ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                    ? const Icon(Icons.person, size: 50, color: AppTheme.grey)
                     : null,
               ),
             ),
@@ -57,17 +57,17 @@ class ProfileImageSection extends StatelessWidget {
                 elevation: 4,
                 child: InkWell(
                   onTap: isLoading ? null : onTap,
-                  splashColor: Colors.white24,
+                  splashColor: AppTheme.white24,
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: AppTheme.white, width: 2),
                     ),
                     child: const Icon(
                       Icons.camera_alt,
                       size: 16,
-                      color: Colors.white,
+                      color: AppTheme.white,
                     ),
                   ),
                 ),

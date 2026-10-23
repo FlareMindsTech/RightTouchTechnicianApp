@@ -31,13 +31,13 @@ class ServicesTab extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: AppTheme.black,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               "You are eligible for the following services",
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 14, color: AppTheme.grey[600]),
             ),
             const SizedBox(height: 24),
             Expanded(
@@ -53,11 +53,11 @@ class ServicesTab extends StatelessWidget {
                   final service = _services[index];
                   return Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.white,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withValues(alpha: 0.1),
+                          color: AppTheme.grey.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -91,7 +91,7 @@ class ServicesTab extends StatelessWidget {
                         Text(
                           service['price'],
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: AppTheme.grey[600],
                             fontWeight: FontWeight.w500,
                           ),
                         ),

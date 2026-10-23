@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:right_touch/providers/socket_state_provider.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/utils/error_handler.dart';
 import 'package:right_touch/widgets/error_boundary.dart';
+import 'package:right_touch/widgets/rt_loader.dart';
 
 import 'package:right_touch/screens/profile_screen.dart';
 import 'package:right_touch/screens/tabs/earnings_tab.dart';
@@ -66,7 +68,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
             child: Container(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: AppTheme.black.withValues(alpha: 0.3),
             ),
           ),
         ),
@@ -76,11 +78,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 32),
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.white,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: AppTheme.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -119,7 +121,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       },
       loading: () => const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryColor),
+          child: RtLoader(),
         ),
       ),
       orElse: () {
@@ -133,7 +135,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         });
         return const Scaffold(
           body: Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            child: RtLoader(),
           ),
         );
       },
@@ -215,22 +217,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const Duration(seconds: 2)) {
             _lastBackPressTime = now;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
+              const SnackBar(
+                content: Text(
                   'Press back again to exit',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppTheme.white,
                   ),
                 ),
-                duration: const Duration(seconds: 2),
+                duration: Duration(seconds: 2),
                 backgroundColor: AppTheme.primaryColor,
               ),
             );
             return;
           }
-          SystemNavigator.pop();
+          unawaited(SystemNavigator.pop());
         },
         child: Scaffold(
           extendBody: true,
@@ -285,6 +287,6 @@ class ScreenPlaceholder extends StatelessWidget {
   const ScreenPlaceholder({super.key});
   @override
   Widget build(BuildContext context) {
-    return Container(color: Colors.white); // Basic placeholder
+    return Container(color: AppTheme.white); // Basic placeholder
   }
 }

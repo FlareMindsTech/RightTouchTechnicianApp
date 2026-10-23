@@ -110,12 +110,45 @@ class DashboardNotifier extends AsyncNotifier<DashboardData> {
     if (transactions.isEmpty) return [];
 
     final now = DateTime.now();
+
+    if (filter == 'Year') {
+      // Aggregate into 12 monthly points for Year filter to avoid rendering 365 FlSpots
+      final Map<int, double> monthlyEarnings = {};
+      for (int m = 1; m <= 12; m++) {
+        monthlyEarnings[m] = 0.0;
+      }
+
+      final currentYear = now.year;
+      for (var tx in transactions) {
+        try {
+          if (tx is! Map) continue;
+          final dateStr = tx['createdAt'] ?? tx['date'];
+          if (dateStr == null) continue;
+          final date = DateTime.parse(dateStr);
+          if (date.year == currentYear) {
+            final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+            final type = tx['type']?.toString().toLowerCase();
+            if (type == 'credit' || type == 'earning') {
+              monthlyEarnings[date.month] = (monthlyEarnings[date.month] ?? 0.0) + amount;
+            }
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+
+      final List<FlSpot> spots = [];
+      for (int m = 1; m <= 12; m++) {
+        spots.add(FlSpot((m - 1).toDouble(), monthlyEarnings[m] ?? 0.0));
+      }
+      return spots;
+    }
+
     final Map<DateTime, double> dailyEarnings = {};
 
     int daysToLookBack = 7;
     if (filter == 'Month') daysToLookBack = 30;
     if (filter == '3M') daysToLookBack = 90;
-    if (filter == 'Year') daysToLookBack = 365;
 
     final startDate = DateTime(
       now.year,

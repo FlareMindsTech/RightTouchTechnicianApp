@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:right_touch/models/job.dart';
+import 'package:right_touch/data/models/job.dart';
+
 import 'package:right_touch/data/repositories/job_repository.dart';
 
 // Provides current active jobs

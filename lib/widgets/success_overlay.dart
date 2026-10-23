@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:right_touch/utils/app_theme.dart';
 
 /// Shows a full-screen success animation overlay, then calls [onDone].
 /// Usage: SuccessOverlay.show(context, message: 'Profile Complete!', onDone: () => ...);
@@ -89,7 +90,7 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
         return Opacity(
           opacity: _fadeAnim.value,
           child: Material(
-            color: Colors.black.withValues(alpha: 0.6),
+            color: AppTheme.black.withValues(alpha: 0.6),
             child: Center(
               child: Transform.scale(
                 scale: _scaleAnim.value,
@@ -97,11 +98,11 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
                   width: 220,
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.white,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
+                        color: AppTheme.black.withValues(alpha: 0.15),
                         blurRadius: 30,
                         offset: const Offset(0, 10),
                       ),
@@ -114,12 +115,12 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
                         width: 72,
                         height: 72,
                         decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.12),
+                          color: AppTheme.green.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.check_circle_rounded,
-                          color: Colors.green,
+                          color: AppTheme.green,
                           size: 48,
                         ),
                       ),
@@ -130,7 +131,7 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: AppTheme.black87,
                         ),
                       ),
                       if (widget.subtitle != null) ...[
@@ -140,7 +141,7 @@ class _SuccessOverlayWidgetState extends State<_SuccessOverlayWidget>
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.grey[600],
+                            color: AppTheme.grey[600],
                           ),
                         ),
                       ],
