@@ -11,6 +11,14 @@ class KycRepoHelper {
     return MediaType('image', 'jpeg');
   }
 
+  static String _getFileExtension(String path) {
+    final dot = path.lastIndexOf('.');
+    if (dot != -1 && dot < path.length - 1) {
+      return path.substring(dot).toLowerCase();
+    }
+    return '.jpg';
+  }
+
   static Future<Map<String, dynamic>> submitKYC(
     DioClient client, {
     required String aadhaarNumber,
@@ -52,7 +60,7 @@ class KycRepoHelper {
               !aadhaarPaths[i].startsWith('http')) {
             files.add(await MultipartFile.fromFile(
               aadhaarPaths[i],
-              filename: 'aadhaar_${i == 0 ? "front" : "back"}.jpg',
+              filename: 'aadhaar_${i == 0 ? "front" : "back"}${_getFileExtension(aadhaarPaths[i])}',
               contentType: getMediaType(aadhaarPaths[i]),
             ));
           }
@@ -65,7 +73,7 @@ class KycRepoHelper {
       if (panPath.isNotEmpty && !panPath.startsWith('http')) {
         formDataMap['panImage'] = await MultipartFile.fromFile(
           panPath,
-          filename: 'pan_front.jpg',
+          filename: 'pan_front${_getFileExtension(panPath)}',
           contentType: getMediaType(panPath),
         );
       }
@@ -73,7 +81,7 @@ class KycRepoHelper {
       if (dlPath.isNotEmpty && !dlPath.startsWith('http')) {
         formDataMap['dlImage'] = await MultipartFile.fromFile(
           dlPath,
-          filename: 'dl.jpg',
+          filename: 'dl${_getFileExtension(dlPath)}',
           contentType: getMediaType(dlPath),
         );
       }

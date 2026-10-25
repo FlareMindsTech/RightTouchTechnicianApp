@@ -259,9 +259,14 @@ class AuthRepository {
 
   Future<Map<String, dynamic>> uploadProfileImage(String imagePath) async {
     try {
+      final ext = imagePath.contains('.')
+          ? imagePath.substring(imagePath.lastIndexOf('.')).toLowerCase()
+          : '.jpg';
+      final filename = 'profile_${DateTime.now().millisecondsSinceEpoch}$ext';
       final formData = FormData.fromMap({
         'profileImage': await MultipartFile.fromFile(
           imagePath,
+          filename: filename,
           contentType: KycRepoHelper.getMediaType(imagePath),
         ),
       });
