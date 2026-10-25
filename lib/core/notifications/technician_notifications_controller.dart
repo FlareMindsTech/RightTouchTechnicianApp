@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:right_touch/core/notifications/fcm_service.dart';
-import 'package:right_touch/core/socket/socket_provider.dart';
+import 'package:right_touch/providers/socket_provider.dart';
 import 'package:right_touch/main.dart';
 import 'package:right_touch/providers/auth_provider.dart';
 import 'package:right_touch/providers/dashboard_provider.dart';

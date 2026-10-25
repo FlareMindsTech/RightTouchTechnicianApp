@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:right_touch/core/notifications/fcm_service.dart';
-import 'package:right_touch/core/socket/socket_provider.dart';
+import 'package:right_touch/providers/socket_provider.dart';
 import 'package:right_touch/core/storage/secure_storage_provider.dart';
 import 'package:right_touch/data/models/auth_state.dart';
 export 'package:right_touch/data/models/auth_state.dart';

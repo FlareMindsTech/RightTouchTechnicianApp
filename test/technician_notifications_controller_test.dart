@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:right_touch/core/notifications/technician_notifications_controller.dart';
 import 'package:right_touch/core/notifications/fcm_service.dart';
 import 'package:right_touch/core/routing/app_router.dart';
-import 'package:right_touch/core/socket/socket_provider.dart';
+import 'package:right_touch/providers/socket_provider.dart';
 import 'package:right_touch/services/socket_service.dart';
 import 'package:right_touch/main.dart';
 
