@@ -4,6 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:right_touch/data/models/auth_state.dart';
 import 'package:right_touch/data/models/user_model.dart';
 import 'package:right_touch/core/routing/app_router.dart';
+import 'package:right_touch/providers/auth_provider.dart';
+
+class _FakeAuthNotifier extends AuthNotifier {
+  @override
+  AuthState build() => const AuthState.unauthenticated();
+}
 
 void main() {
   group('appRouterRedirect 401 Expiry & Navigation Tests', () {
@@ -68,7 +74,11 @@ void main() {
     });
 
     test('GoRouter /job-details route defines redirect fallback when extra is null', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(_FakeAuthNotifier.new),
+        ],
+      );
       addTearDown(container.dispose);
 
       final router = container.read(goRouterProvider);
@@ -77,6 +87,22 @@ void main() {
           .firstWhere((r) => r.path == '/job-details');
 
       expect(jobRoute.redirect, isNotNull);
+    });
+
+    test('GoRouter /fcm-token route defines redirect guard', () {
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(_FakeAuthNotifier.new),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final router = container.read(goRouterProvider);
+      final fcmRoute = router.configuration.routes
+          .whereType<GoRoute>()
+          .firstWhere((r) => r.path == '/fcm-token');
+
+      expect(fcmRoute.redirect, isNotNull);
     });
   });
 }

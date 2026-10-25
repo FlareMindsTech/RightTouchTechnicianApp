@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -266,6 +267,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/fcm-token',
+        redirect: (context, state) => kDebugMode ? null : '/dashboard',
         pageBuilder: (context, state) => _buildPage(
           context: context,
           state: state,
