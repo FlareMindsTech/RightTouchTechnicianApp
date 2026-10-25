@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:right_touch/core/storage/secure_storage_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:right_touch/providers/registration_form_provider.dart';
 
@@ -8,6 +10,7 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
   });
 
   group('RegistrationFormState and Notifier Persistence Tests', () {
@@ -64,16 +67,19 @@ void main() {
       // Wait a tick for async disk persist
       await Future.delayed(const Duration(milliseconds: 50));
 
-      final prefs = await SharedPreferences.getInstance();
-      final savedDraft = prefs.getString('registration_form_draft');
+      final savedDraft = await appSecureStorage.read(key: 'registration_form_draft');
       expect(savedDraft, isNotNull);
       expect(savedDraft, contains('Jane'));
       expect(savedDraft, contains('999988887777'));
       expect(savedDraft, contains('/local/cache/pan.png'));
       expect(savedDraft, contains('HDFC0001234'));
+
+      // Ensure no plaintext leak in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('registration_form_draft'), isNull);
     });
 
-    test('clearCache clears in-memory state and removes SharedPreferences draft', () async {
+    test('clearCache clears in-memory state and removes secure draft', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -86,6 +92,9 @@ void main() {
 
       final state = container.read(registrationFormProvider);
       expect(state.fname, isEmpty);
+
+      final secureDraft = await appSecureStorage.read(key: 'registration_form_draft');
+      expect(secureDraft, isNull);
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('registration_form_draft'), isNull);

@@ -10,7 +10,9 @@ import 'package:right_touch/data/models/auth_state.dart';
 export 'package:right_touch/data/models/auth_state.dart';
 import 'package:right_touch/data/models/user_model.dart';
 import 'package:right_touch/data/repositories/auth_repository.dart';
+import 'package:right_touch/data/repositories/job_repository.dart';
 import 'package:right_touch/providers/helpers/profile_fallback_merger.dart';
+import 'package:right_touch/providers/job_provider.dart';
 import 'package:right_touch/providers/registration_form_provider.dart';
 import 'package:right_touch/services/location_tracking_service.dart';
 
@@ -174,6 +176,12 @@ class AuthNotifier extends Notifier<AuthState> {
       await _storage.delete(key: 'technician_id');
       await _storage.delete(key: 'cached_profile');
       await _repository.saveAvailabilityStatus(false);
+
+      // SEC-09: Invalidate in-memory job repository cache and providers to prevent cross-session leakage
+      ref.read(jobRepositoryProvider).invalidateCache();
+      ref.invalidate(currentJobsProvider);
+      ref.invalidate(historyJobsProvider);
+      ref.invalidate(broadcastJobsProvider);
 
       ref.read(locationServiceProvider).stopTracking();
       ref.read(socketServiceProvider).disconnect();

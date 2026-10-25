@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:right_touch/core/storage/secure_storage_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RegistrationFormState {
@@ -191,9 +192,7 @@ class RegistrationFormState {
 
 class RegistrationFormNotifier extends Notifier<RegistrationFormState> {
   static const String _storageKey = 'registration_form_draft';
-  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  );
+  static const FlutterSecureStorage _secureStorage = appSecureStorage;
 
   @override
   RegistrationFormState build() {
