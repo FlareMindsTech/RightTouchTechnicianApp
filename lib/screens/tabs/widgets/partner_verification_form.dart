@@ -234,9 +234,21 @@ class _PartnerVerificationFormState
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
+        maxWidth: 1920,
+        maxHeight: 1920,
         imageQuality: 70,
       );
       if (image != null) {
+        final length = await image.length();
+        if (length > 5 * 1024 * 1024) {
+          if (mounted) {
+            ErrorHandler.showError(
+              context,
+              'Document size exceeds 5 MB limit. Please select a smaller photo.',
+            );
+          }
+          return;
+        }
         setState(() {
           if (type == 'aadhar') _aadharPath = image.path;
           if (type == 'aadhar_back') _aadharBackPath = image.path;

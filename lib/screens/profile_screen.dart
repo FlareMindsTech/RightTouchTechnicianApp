@@ -71,11 +71,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
         source: source,
+        maxWidth: 1920,
+        maxHeight: 1920,
         imageQuality: 70,
       );
 
       if (pickedFile != null) {
         if (!mounted) return;
+        final fileLength = await pickedFile.length();
+        if (fileLength > 5 * 1024 * 1024) {
+          ErrorHandler.showError(
+            context,
+            'Image size exceeds 5 MB limit. Please select a smaller photo.',
+          );
+          return;
+        }
         setState(() {
           _imageFile = File(pickedFile.path);
         });

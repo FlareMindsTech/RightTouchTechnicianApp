@@ -18,8 +18,26 @@ class ServiceImagePickerSlot extends StatelessWidget {
   Future<void> _pickImage(BuildContext context, ImageSource source) async {
     try {
       final picker = ImagePicker();
-      final photo = await picker.pickImage(source: source, imageQuality: 70);
+      final photo = await picker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 70,
+      );
       if (photo != null) {
+        final length = await photo.length();
+        if (length > 5 * 1024 * 1024) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Image size exceeds 5 MB limit. Please select a smaller photo.',
+                ),
+              ),
+            );
+          }
+          return;
+        }
         onImagePicked(photo.path);
       }
     } catch (e) {
