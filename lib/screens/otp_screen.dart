@@ -133,7 +133,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
             await ref.read(authRepositoryProvider).verifyOtp(identifier, otp);
         if (mounted) setState(() => _isLoading = false);
 
-        if (result['success']) {
+        if (result['success'] == true) {
           if (mounted) unawaited(context.push('/profile-setup'));
         } else {
           if (mounted) {

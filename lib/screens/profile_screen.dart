@@ -134,7 +134,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       if (mounted) setState(() => _isLoading = false);
 
-      if (result['success']) {
+      if (result['success'] == true) {
         if (mounted) setState(() => _isOnline = value);
         await repository.saveAvailabilityStatus(value);
 

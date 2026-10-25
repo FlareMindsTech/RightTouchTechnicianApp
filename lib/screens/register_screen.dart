@@ -74,7 +74,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           );
       setState(() => _isLoading = false);
 
-      if (result['success']) {
+      if (result['success'] == true) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
