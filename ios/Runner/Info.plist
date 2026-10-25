@@ -53,5 +53,10 @@
 	<string>Right Touch requires camera access to capture KYC verification documents, profile pictures, and service completion photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Right Touch requires photo library access to upload KYC verification documents, profile pictures, and service completion photos.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>
