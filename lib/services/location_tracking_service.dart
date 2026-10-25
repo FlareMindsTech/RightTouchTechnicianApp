@@ -39,6 +39,7 @@ class LocationTrackingService with WidgetsBindingObserver {
 
 
   void dispose() {
+    stopTracking();
     WidgetsBinding.instance.removeObserver(this);
   }
 
@@ -111,9 +112,8 @@ class LocationTrackingService with WidgetsBindingObserver {
 
   void _startTimer() {
     _timer?.cancel(); // Cancel existing if any
-    // Use a conservative 10-minute interval for REST persistence.
-    // Real-time tracking is handled via Socket.IO emit.
-    _timer = Timer.periodic(const Duration(minutes: 10), (timer) async {
+    // Send location every 4.5 minutes for both REST persistence and real-time Socket.IO.
+    _timer = Timer.periodic(const Duration(minutes: 4, seconds: 30), (timer) async {
       await _updateLocation();
     });
     // Immediately update once when starting
