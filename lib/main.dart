@@ -12,6 +12,7 @@ import 'package:right_touch/core/routing/app_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:right_touch/core/notifications/notification_channels.dart';
+import 'package:right_touch/providers/registration_form_provider.dart';
 import 'package:sms_autofill/sms_autofill.dart';
 
 @pragma('vm:entry-point')
@@ -177,6 +178,9 @@ Future<void> _initServices() async {
 
     // Initialize Notification Service
     await NotificationService().initialize();
+
+    // SEC-03: Remove legacy unencrypted draft from SharedPreferences if present
+    await RegistrationFormNotifier.cleanupLegacyPlaintextDraft();
 
     if (kDebugMode) {
       debugPrint('✅ Services initialized');

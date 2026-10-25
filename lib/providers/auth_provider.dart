@@ -211,6 +211,7 @@ class AuthNotifier extends Notifier<AuthState> {
         dlPath: dlPath,
       );
       final user = await _repository.getProfile();
+      ref.read(registrationFormProvider.notifier).clearCache();
       state = AuthState.authenticated(user);
     } catch (e) {
       if (_isDeactivatedOrUnauthorized(e)) {
@@ -241,6 +242,7 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       await _repository.submitBankOnly(bankDetails: bankDetails);
       final updatedUser = await _repository.getProfile();
+      ref.read(registrationFormProvider.notifier).clearCache();
       state = AuthState.authenticated(updatedUser);
     } catch (e) {
       if (_isDeactivatedOrUnauthorized(e)) {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RegistrationFormState {
@@ -190,6 +191,9 @@ class RegistrationFormState {
 
 class RegistrationFormNotifier extends Notifier<RegistrationFormState> {
   static const String _storageKey = 'registration_form_draft';
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   @override
   RegistrationFormState build() {
@@ -197,10 +201,19 @@ class RegistrationFormNotifier extends Notifier<RegistrationFormState> {
     return RegistrationFormState();
   }
 
-  Future<void> _restoreFromStorage() async {
+  /// SEC-03: One-time migration to remove any legacy plaintext draft from SharedPreferences
+  static Future<void> cleanupLegacyPlaintextDraft() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getString(_storageKey);
+      if (prefs.containsKey(_storageKey)) {
+        await prefs.remove(_storageKey);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _restoreFromStorage() async {
+    try {
+      final saved = await _secureStorage.read(key: _storageKey);
       if (saved != null && saved.isNotEmpty) {
         final decoded = jsonDecode(saved);
         if (decoded is Map<String, dynamic>) {
@@ -209,19 +222,18 @@ class RegistrationFormNotifier extends Notifier<RegistrationFormState> {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error restoring registration form draft: $e');
+        debugPrint('Error restoring registration form draft from secure storage: $e');
       }
     }
   }
 
   Future<void> _persistToStorage() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
       final encoded = jsonEncode(state.toJson());
-      await prefs.setString(_storageKey, encoded);
+      await _secureStorage.write(key: _storageKey, value: encoded);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error saving registration form draft: $e');
+        debugPrint('Error saving registration form draft to secure storage: $e');
       }
     }
   }
@@ -299,13 +311,12 @@ class RegistrationFormNotifier extends Notifier<RegistrationFormState> {
 
   void clearCache() {
     state = RegistrationFormState();
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.remove(_storageKey);
-    }).catchError((e) {
+    _secureStorage.delete(key: _storageKey).catchError((e) {
       if (kDebugMode) {
-        debugPrint('Error clearing registration draft from prefs: $e');
+        debugPrint('Error clearing registration draft from secure storage: $e');
       }
     });
+    cleanupLegacyPlaintextDraft();
   }
 }
 
