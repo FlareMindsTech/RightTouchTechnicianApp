@@ -9,6 +9,8 @@ import 'package:right_touch/providers/job_provider.dart';
 import 'package:right_touch/data/models/job.dart';
 
 import 'package:right_touch/core/routing/app_router.dart';
+import 'package:right_touch/services/location_tracking_service.dart';
+import 'package:right_touch/data/repositories/auth_repository.dart';
 
 final technicianNotificationsProvider =
     Provider.family<void, String>((ref, jwt) {
@@ -114,6 +116,25 @@ final technicianNotificationsProvider =
       debugPrint('[TechnicianNotifications] onClawbackApplied: $data');
       final amount = data['holdAmountRupees'] ?? data['amount'] ?? '';
       GlobalScaffold.showSnackBar('📉 Clawback applied: ₹$amount', isError: true);
+      ref.invalidate(dashboardDataProvider);
+    },
+    onAutoOfflined: (data) {
+      debugPrint('[TechnicianNotifications] onAutoOfflined: $data');
+      final reason = data['reason'] ?? data['offlineReason'] ?? 'stale location';
+      ref.read(authRepositoryProvider).saveAvailabilityStatus(false);
+      ref.read(locationServiceProvider).stopTracking();
+      ref.read(authProvider.notifier).refreshKYC();
+      GlobalScaffold.showSnackBar(
+        '⚠️ You were set offline ($reason). Tap Go Online in Profile to resume receiving jobs.',
+        isError: true,
+      );
+    },
+    onLocationRequired: (data) {
+      debugPrint('[TechnicianNotifications] onLocationRequired: $data');
+      ref.read(locationServiceProvider).forceLocationUpdate();
+    },
+    onNotificationNew: (data) {
+      debugPrint('[TechnicianNotifications] onNotificationNew: $data');
       ref.invalidate(dashboardDataProvider);
     },
   );

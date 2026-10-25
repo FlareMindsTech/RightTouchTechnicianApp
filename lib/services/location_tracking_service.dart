@@ -46,12 +46,11 @@ class LocationTrackingService with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      // Stop timer when app goes to background
+    if (state == AppLifecycleState.detached) {
+      // Stop timer only when app is detached/terminated
       _stopTimer();
     } else if (state == AppLifecycleState.resumed) {
-      // Restart timer if we were supposed to be tracking
+      // Restart timer if tracking and immediately refresh location upon resuming
       if (_isTracking) {
         _startTimer();
       }
@@ -112,8 +111,9 @@ class LocationTrackingService with WidgetsBindingObserver {
 
   void _startTimer() {
     _timer?.cancel(); // Cancel existing if any
-    // Send location every 4.5 minutes for both REST persistence and real-time Socket.IO.
-    _timer = Timer.periodic(const Duration(minutes: 4, seconds: 30), (timer) async {
+    // Send location every 45 seconds to stay safely within the backend's
+    // 90-second matching freshness window (LOCATION_STALENESS_SECONDS).
+    _timer = Timer.periodic(const Duration(seconds: 45), (timer) async {
       await _updateLocation();
     });
     // Immediately update once when starting
@@ -124,6 +124,9 @@ class LocationTrackingService with WidgetsBindingObserver {
     _timer?.cancel();
     _timer = null;
   }
+
+  /// Forces an immediate location ping out-of-band (e.g. on technician:location_required)
+  Future<void> forceLocationUpdate() => _updateLocation();
 
   Future<void> _updateLocation() async {
     try {

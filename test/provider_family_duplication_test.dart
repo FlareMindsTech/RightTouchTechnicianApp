@@ -74,6 +74,9 @@ void main() {
           onPermissionChanged: any(named: 'onPermissionChanged'),
           onComplaintFiled: any(named: 'onComplaintFiled'),
           onClawbackApplied: any(named: 'onClawbackApplied'),
+          onAutoOfflined: any(named: 'onAutoOfflined'),
+          onLocationRequired: any(named: 'onLocationRequired'),
+          onNotificationNew: any(named: 'onNotificationNew'),
     )).called(1);
   });
 }

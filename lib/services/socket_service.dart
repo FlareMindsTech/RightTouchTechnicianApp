@@ -30,6 +30,9 @@ class SocketService {
   void Function(Map<String, dynamic>)? onPermissionChanged;
   void Function(Map<String, dynamic>)? onComplaintFiled;
   void Function(Map<String, dynamic>)? onClawbackApplied;
+  void Function(Map<String, dynamic>)? onAutoOfflined;
+  void Function(Map<String, dynamic>)? onLocationRequired;
+  void Function(Map<String, dynamic>)? onNotificationNew;
 
   // Legacy/Compatibility callbacks
   void Function(Map<String, dynamic>)? get onNewJob => onJobNew;
@@ -56,6 +59,9 @@ class SocketService {
     void Function(Map<String, dynamic>)? onPermissionChanged,
     void Function(Map<String, dynamic>)? onComplaintFiled,
     void Function(Map<String, dynamic>)? onClawbackApplied,
+    void Function(Map<String, dynamic>)? onAutoOfflined,
+    void Function(Map<String, dynamic>)? onLocationRequired,
+    void Function(Map<String, dynamic>)? onNotificationNew,
     void Function(String)? onJobTaken,
     void Function(List<dynamic>)? onJobsListReceived,
     void Function(Map<String, dynamic>)? onStatusUpdate,
@@ -73,6 +79,9 @@ class SocketService {
     if (onPermissionChanged != null) this.onPermissionChanged = onPermissionChanged;
     if (onComplaintFiled != null) this.onComplaintFiled = onComplaintFiled;
     if (onClawbackApplied != null) this.onClawbackApplied = onClawbackApplied;
+    if (onAutoOfflined != null) this.onAutoOfflined = onAutoOfflined;
+    if (onLocationRequired != null) this.onLocationRequired = onLocationRequired;
+    if (onNotificationNew != null) this.onNotificationNew = onNotificationNew;
     if (onJobTaken != null) this.onJobTaken = onJobTaken;
     if (onJobsListReceived != null) this.onJobsListReceived = onJobsListReceived;
     if (onStatusUpdate != null) this.onStatusUpdate = onStatusUpdate;
@@ -252,8 +261,8 @@ class SocketService {
       _safeMapCallback(onClawbackApplied, data);
     });
 
-    // L. Job taken by another technician
-    socket.on('job:taken', (data) {
+    // L. Job taken by another technician (listen to both 'job:taken' and 'job_taken')
+    void handleJobTaken(dynamic data) {
       try {
         final bookingId =
             data is Map ? data['bookingId']?.toString() : data?.toString();
@@ -262,9 +271,11 @@ class SocketService {
           onJobTaken?.call(bookingId);
         }
       } catch (e) {
-        _log('❌ Error handling job:taken: $e');
+        _log('❌ Error handling job taken: $e');
       }
-    });
+    }
+    socket.on('job:taken', handleJobTaken);
+    socket.on('job_taken', handleJobTaken);
 
     // M. Jobs list received
     socket.on('technician:jobs_list', (data) {
@@ -282,6 +293,24 @@ class SocketService {
     socket.on('technician:status_update', (data) {
       _log('🆕 Technician Status Update: $data');
       _safeMapCallback(onStatusUpdate, data);
+    });
+
+    // O. Auto-offlined by backend presence sweeper (due to stale GPS / inactivity)
+    socket.on('technician:offline', (data) {
+      _log('🔴 Auto-offlined by presence sweeper: $data');
+      _safeMapCallback(onAutoOfflined, data);
+    });
+
+    // P. Location required (GPS missing, stale, or server prompt)
+    socket.on('technician:location_required', (data) {
+      _log('📍 Server requested fresh location: $data');
+      _safeMapCallback(onLocationRequired, data);
+    });
+
+    // Q. New Notification item for feed
+    socket.on('notification:new', (data) {
+      _log('📢 New Notification: $data');
+      _safeMapCallback(onNotificationNew, data);
     });
   }
 
@@ -315,8 +344,12 @@ class SocketService {
     socket.off('complaint:filed_against_you');
     socket.off('clawback:applied');
     socket.off('job:taken');
+    socket.off('job_taken');
     socket.off('technician:jobs_list');
     socket.off('technician:status_update');
+    socket.off('technician:offline');
+    socket.off('technician:location_required');
+    socket.off('notification:new');
     socket.clearListeners();
     _listenersRegistered = false;
   }
