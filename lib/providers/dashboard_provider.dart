@@ -124,7 +124,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardData> {
           if (tx is! Map) continue;
           final dateStr = tx['createdAt'] ?? tx['date'];
           if (dateStr == null) continue;
-          final date = DateTime.parse(dateStr);
+          final date = DateTime.parse(dateStr).toLocal();
           if (date.year == currentYear) {
             final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
             final type = tx['type']?.toString().toLowerCase();
@@ -166,7 +166,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardData> {
         if (tx is! Map) continue;
         final dateStr = tx['createdAt'] ?? tx['date'];
         if (dateStr == null) continue;
-        final date = DateTime.parse(dateStr);
+        final date = DateTime.parse(dateStr).toLocal();
         final day = DateTime(date.year, date.month, date.day);
 
         if (dailyEarnings.containsKey(day)) {
