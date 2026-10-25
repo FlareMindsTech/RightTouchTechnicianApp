@@ -77,8 +77,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
 
       if (pickedFile != null) {
-        if (!mounted) return;
         final fileLength = await pickedFile.length();
+        if (!mounted) return;
         if (fileLength > 5 * 1024 * 1024) {
           ErrorHandler.showError(
             context,
