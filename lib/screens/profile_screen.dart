@@ -47,6 +47,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final savedStatus =
         await ref.read(authRepositoryProvider).loadAvailabilityStatus();
 
+    if (!mounted) return;
+
     authState.maybeWhen(
       authenticated: (user) {
         setState(() {
@@ -73,10 +75,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
 
       if (pickedFile != null) {
-        if (!mounted) {
-          setState(() => _isProcessInProgress = false);
-          return;
-        }
+        if (!mounted) return;
         setState(() {
           _imageFile = File(pickedFile.path);
         });
