@@ -62,17 +62,7 @@ class NotificationService {
       // Attempt to get token (fire-and-forget, does NOT block startup)
       unawaited(_retrieveAndPrintToken());
 
-      // 4. Subscribe to topic (with timeout)
-      try {
-        await FirebaseMessaging.instance
-            .subscribeToTopic('technicians')
-            .timeout(const Duration(seconds: 5));
-        debugPrint('[NotificationService] Subscribed to topic: technicians');
-      } catch (e) {
-        debugPrint('[NotificationService] Topic subscription notice: $e');
-      }
-
-      // 5. Foreground Push Listener (FCM)
+      // 4. Foreground Push Listener (FCM)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
         debugPrint('[NotificationService] Foreground push received: ${message.messageId}');
         await showForegroundNotification(message);
@@ -182,6 +172,30 @@ class NotificationService {
     } catch (e) {
       debugPrint('[NotificationService] Error getting token: $e');
       return null;
+    }
+  }
+
+  /// SEC-06: Subscribe to broadcast technicians topic only after successful authentication
+  Future<void> subscribeToTechniciansTopic() async {
+    try {
+      await FirebaseMessaging.instance
+          .subscribeToTopic('technicians')
+          .timeout(const Duration(seconds: 5));
+      debugPrint('[NotificationService] Subscribed to topic: technicians');
+    } catch (e) {
+      debugPrint('[NotificationService] Topic subscription notice: $e');
+    }
+  }
+
+  /// SEC-06: Unsubscribe from technicians topic on logout to prevent receiving broadcasts post-session
+  Future<void> unsubscribeFromTechniciansTopic() async {
+    try {
+      await FirebaseMessaging.instance
+          .unsubscribeFromTopic('technicians')
+          .timeout(const Duration(seconds: 5));
+      debugPrint('[NotificationService] Unsubscribed from topic: technicians');
+    } catch (e) {
+      debugPrint('[NotificationService] Topic unsubscription notice: $e');
     }
   }
 }

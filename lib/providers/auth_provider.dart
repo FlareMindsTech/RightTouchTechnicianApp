@@ -15,6 +15,7 @@ import 'package:right_touch/providers/helpers/profile_fallback_merger.dart';
 import 'package:right_touch/providers/job_provider.dart';
 import 'package:right_touch/providers/registration_form_provider.dart';
 import 'package:right_touch/services/location_tracking_service.dart';
+import 'package:right_touch/services/notification_service.dart';
 
 class AuthNotifier extends Notifier<AuthState> {
   late final AuthRepository _repository;
@@ -96,6 +97,7 @@ class AuthNotifier extends Notifier<AuthState> {
         try {
           unawaited(ref.read(fcmServiceProvider).registerToken(token));
           ref.read(fcmServiceProvider).listenTokenRefresh(() => token);
+          unawaited(NotificationService().subscribeToTechniciansTopic());
         } catch (e) {
           debugPrint('Error registering FCM on checkAuth: $e');
         }
@@ -170,6 +172,13 @@ class AuthNotifier extends Notifier<AuthState> {
         } catch (e) {
           debugPrint('Error unregistering FCM token on logout: $e');
         }
+      }
+
+      // SEC-06: Unsubscribe from technician broadcast topic on logout
+      try {
+        await NotificationService().unsubscribeFromTechniciansTopic();
+      } catch (e) {
+        debugPrint('Error unsubscribing from technicians topic on logout: $e');
       }
 
       await _storage.delete(key: 'auth_token');
@@ -328,6 +337,7 @@ class AuthNotifier extends Notifier<AuthState> {
           try {
             unawaited(ref.read(fcmServiceProvider).registerToken(token));
             ref.read(fcmServiceProvider).listenTokenRefresh(() => token);
+            unawaited(NotificationService().subscribeToTechniciansTopic());
           } catch (e) {
             debugPrint('Error registering FCM on login: $e');
           }
