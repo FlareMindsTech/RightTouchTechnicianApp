@@ -358,6 +358,41 @@ class AuthService {
     }
   }
 
+  /// Send Completion OTP to customer
+  Future<Map<String, dynamic>> sendCompletionOtp(String bookingId) async {
+    try {
+      return await _jobRepository.sendCompletionOtp(bookingId);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// Resend Completion OTP to customer
+  Future<Map<String, dynamic>> resendCompletionOtp(String bookingId) async {
+    try {
+      return await _jobRepository.resendCompletionOtp(bookingId);
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// Verify Completion OTP from customer and complete job
+  Future<Map<String, dynamic>> verifyCompletionOtp(
+    String bookingId,
+    String otp, {
+    Map<String, dynamic>? additionalData,
+  }) async {
+    try {
+      return await _jobRepository.verifyCompletionOtp(
+        bookingId,
+        otp,
+        additionalData: additionalData,
+      );
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
   /// Get Wallet History
   Future<Map<String, dynamic>> getWalletHistory() async {
     try {

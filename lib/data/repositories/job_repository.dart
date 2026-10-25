@@ -151,6 +151,56 @@ class JobRepository {
     }
   }
 
+  Future<Map<String, dynamic>> sendCompletionOtp(String bookingId) async {
+    try {
+      final response = await _client.post(
+        ApiConfig.sendCompletionOtpEndpoint(bookingId),
+      );
+      if (response.data is Map<String, dynamic>) {
+        return response.data;
+      }
+      return {'success': true, 'data': response.data};
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e, 'Failed to send completion OTP'));
+    }
+  }
+
+  Future<Map<String, dynamic>> resendCompletionOtp(String bookingId) async {
+    try {
+      final response = await _client.post(
+        ApiConfig.resendCompletionOtpEndpoint(bookingId),
+      );
+      if (response.data is Map<String, dynamic>) {
+        return response.data;
+      }
+      return {'success': true, 'data': response.data};
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e, 'Failed to resend completion OTP'));
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyCompletionOtp(
+    String bookingId,
+    String otp, {
+    Map<String, dynamic>? additionalData,
+  }) async {
+    try {
+      final response = await _client.post(
+        ApiConfig.verifyCompletionOtpEndpoint(bookingId),
+        data: {'otp': otp, ...?additionalData},
+      );
+      // Invalidate caches
+      _cache.remove('current_jobs');
+      _cache.remove('job_history');
+      if (response.data is Map<String, dynamic>) {
+        return response.data;
+      }
+      return {'success': true, 'data': response.data};
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e, 'Failed to verify completion OTP'));
+    }
+  }
+
   Future<List<dynamic>> getJobHistory({bool forceRefresh = false}) async {
     const cacheKey = 'job_history';
     if (!forceRefresh && _isCacheValid(cacheKey)) {

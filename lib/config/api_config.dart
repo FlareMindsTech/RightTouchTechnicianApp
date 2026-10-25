@@ -9,11 +9,18 @@ class ApiConfig {
   static String get baseUrl {
     if (dotenv.isInitialized && dotenv.env.containsKey('BASE_URL')) {
       final envUrl = dotenv.env['BASE_URL'];
-      if (envUrl != null && envUrl.isNotEmpty) return envUrl;
+      if (envUrl != null && envUrl.isNotEmpty) return _cleanUrl(envUrl);
     }
     const fromEnv = String.fromEnvironment('BASE_URL');
-    if (fromEnv.isNotEmpty) return fromEnv;
-    return 'https://backend-pa6p.onrender.com';
+    if (fromEnv.isNotEmpty) return _cleanUrl(fromEnv);
+    return 'https://api.righttouchservice.com';
+  }
+
+  static String _cleanUrl(String url) {
+    final trimmed = url.trim();
+    return trimmed.endsWith('/')
+        ? trimmed.substring(0, trimmed.length - 1)
+        : trimmed;
   }
 
   // API Endpoints
@@ -42,6 +49,15 @@ class ApiConfig {
 
   static String respondJobBroadcastEndpoint(String bookingId) =>
       '/api/technician/job-broadcast/respond/$bookingId';
+
+  static String sendCompletionOtpEndpoint(String bookingId) =>
+      '/api/technician/booking/$bookingId/completion-otp';
+
+  static String resendCompletionOtpEndpoint(String bookingId) =>
+      '/api/technician/booking/$bookingId/completion-otp/resend';
+
+  static String verifyCompletionOtpEndpoint(String bookingId) =>
+      '/api/technician/booking/$bookingId/verify-completion-otp';
 
   // API Keys
   static String get mapTilerKey {

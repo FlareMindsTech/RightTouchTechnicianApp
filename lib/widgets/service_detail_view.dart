@@ -8,6 +8,7 @@ import 'package:right_touch/screens/job_map_screen.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/utils/error_handler.dart';
 import 'package:right_touch/widgets/rt_loader.dart';
+import 'package:right_touch/widgets/service_detail/job_completion_otp_sheet.dart';
 import 'package:right_touch/widgets/service_detail/service_image_picker_slot.dart';
 import 'package:right_touch/widgets/service_detail/service_instructions_card.dart';
 
@@ -24,6 +25,8 @@ class ServiceDetailView extends ConsumerStatefulWidget {
 class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
   late List<bool> _checklistState;
   bool _isSubmitting = false;
+  bool _imagesUploaded = false;
+  bool _otpSent = false;
   String? _beforeImagePath;
   String? _afterImagePath;
 
@@ -39,71 +42,101 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
       _afterImagePath != null;
 
   Future<void> _handleSubmit() async {
+    if (!_isSubmitEnabled) return;
+
+    // If OTP was already sent, re-open entry sheet directly
+    if (_otpSent) {
+      await _openOtpSheet();
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
       final jobRepo = ref.read(jobRepositoryProvider);
-      final uploadResult = await jobRepo.uploadWorkImages(
-        jobId: widget.task.jobId,
-        beforeImagePath: _beforeImagePath!,
-        afterImagePath: _afterImagePath!,
-      );
 
-      if (uploadResult['success'] != true) {
-        if (mounted) {
-          setState(() => _isSubmitting = false);
-          ErrorHandler.showError(
-            context,
-            'Image upload failed: ${uploadResult['message'] ?? 'Unknown error'}',
-          );
+      // Step 1: Upload work images if not already uploaded
+      if (!_imagesUploaded) {
+        final uploadResult = await jobRepo.uploadWorkImages(
+          jobId: widget.task.jobId,
+          beforeImagePath: _beforeImagePath!,
+          afterImagePath: _afterImagePath!,
+        );
+
+        if (uploadResult['success'] != true) {
+          if (mounted) {
+            setState(() => _isSubmitting = false);
+            ErrorHandler.showError(
+              context,
+              'Image upload failed: ${uploadResult['message'] ?? 'Unknown error'}',
+            );
+          }
+          return;
         }
-        return;
+        _imagesUploaded = true;
       }
 
-      final additionalData = <String, dynamic>{};
-      if (widget.task.locationType != null &&
-          widget.task.locationType!.isNotEmpty) {
-        additionalData['locationType'] = widget.task.locationType;
-      }
-
-      final result = await jobRepo.updateJobStatus(
-        widget.task.jobId,
-        'completed',
-        additionalData: additionalData.isNotEmpty ? additionalData : null,
-      );
+      // Step 2: Send Completion OTP to customer
+      final otpResult = await jobRepo.sendCompletionOtp(widget.task.jobId);
 
       if (mounted) {
-        if (result['success'] == true) {
-          ref.invalidate(currentJobsProvider);
-          ref.invalidate(historyJobsProvider);
-          ref.invalidate(dashboardDataProvider);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Service completed successfully!',
-                style: TextStyle(
-                  color: AppTheme.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: AppTheme.green,
+        setState(() {
+          _isSubmitting = false;
+          _otpSent = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              otpResult['message']?.toString() ??
+                  'Completion OTP sent to customer successfully',
             ),
-          );
-          Navigator.pop(context, true);
-        } else {
-          setState(() => _isSubmitting = false);
-          ErrorHandler.showError(
-            context,
-            result['message'] ?? 'Failed to complete job',
-          );
-        }
+            backgroundColor: AppTheme.primaryColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        // Step 3: Open OTP verification sheet
+        await _openOtpSheet();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
         ErrorHandler.showError(context, e);
       }
+    }
+  }
+
+  Future<void> _openOtpSheet() async {
+    final verified = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => JobCompletionOtpSheet(
+        bookingId: widget.task.jobId,
+        locationType: widget.task.locationType,
+      ),
+    );
+
+    if (verified == true && mounted) {
+      ref.invalidate(currentJobsProvider);
+      ref.invalidate(historyJobsProvider);
+      ref.invalidate(dashboardDataProvider);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Service completed successfully!',
+            style: TextStyle(
+              color: AppTheme.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppTheme.green,
+        ),
+      );
+      Navigator.pop(context, true);
     }
   }
 
@@ -259,6 +292,8 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
   }
 
   Widget _buildSubmitButton() {
+    final buttonLabel = _otpSent ? 'Enter Customer OTP' : 'Complete Job';
+
     return FilledButton(
       onPressed: (_isSubmitEnabled && !_isSubmitting) ? _handleSubmit : null,
       style: FilledButton.styleFrom(
@@ -269,9 +304,9 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
       ),
       child: _isSubmitting
           ? const RtLoader.button(color: AppTheme.white)
-          : const Text(
-              'Submit Completion',
-              style: TextStyle(
+          : Text(
+              buttonLabel,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.white,
