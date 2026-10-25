@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:right_touch/data/models/auth_state.dart';
 import 'package:right_touch/data/models/user_model.dart';
 import 'package:right_touch/core/routing/app_router.dart';
@@ -48,6 +50,33 @@ void main() {
 
       final redirect = appRouterRedirect(authState, '/dashboard');
       expect(redirect, isNull);
+    });
+
+    test('Does not prematurely redirect on splash route / allowing animation to complete', () {
+      const authStateAuth = AuthState.authenticated(
+        UserModel(
+          id: 'user123',
+          profileComplete: true,
+          kycStatus: 'approved',
+          bankDetails: {'accountNumber': '123456789'},
+        ),
+      );
+      const authStateUnauth = AuthState.unauthenticated();
+
+      expect(appRouterRedirect(authStateAuth, '/'), isNull);
+      expect(appRouterRedirect(authStateUnauth, '/'), isNull);
+    });
+
+    test('GoRouter /job-details route defines redirect fallback when extra is null', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final router = container.read(goRouterProvider);
+      final jobRoute = router.configuration.routes
+          .whereType<GoRoute>()
+          .firstWhere((r) => r.path == '/job-details');
+
+      expect(jobRoute.redirect, isNotNull);
     });
   });
 }

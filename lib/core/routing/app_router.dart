@@ -65,12 +65,14 @@ final routerNotifierProvider = Provider<RouterNotifier>((ref) {
 
 String? appRouterRedirect(AuthState authState, String location) {
   final isSplash = location == '/';
+  if (isSplash) return null;
+
   final isOnboarding = location == '/onboarding';
   final isLogin = location == '/login';
   final isRegister = location == '/register';
   final isOtp = location == '/otp';
 
-  final isAuthRoute = isSplash || isOnboarding || isLogin || isRegister || isOtp;
+  final isAuthRoute = isOnboarding || isLogin || isRegister || isOtp;
 
   return authState.maybeWhen(
     authenticated: (user) {
@@ -214,8 +216,39 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/job-details',
+        redirect: (context, state) {
+          if (state.extra == null) {
+            return '/dashboard';
+          }
+          return null;
+        },
         pageBuilder: (context, state) {
-          final job = state.extra as Job;
+          Job? job;
+          if (state.extra is Job) {
+            job = state.extra as Job;
+          } else if (state.extra is Map<String, dynamic>) {
+            try {
+              job = Job.fromJson(state.extra as Map<String, dynamic>);
+            } catch (_) {
+              job = null;
+            }
+          }
+
+          if (job == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                context.go('/dashboard');
+              }
+            });
+            return _buildPage(
+              context: context,
+              state: state,
+              child: const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
+
           return _buildPage(
             context: context,
             state: state,
