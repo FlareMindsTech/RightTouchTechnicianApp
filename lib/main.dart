@@ -98,6 +98,17 @@ class GlobalScaffold {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // SEC-12: Global crash and unhandled exception handlers
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('🚨 [UNHANDLED FLUTTER ERROR]: ${details.exceptionAsString()}');
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('🚨 [UNHANDLED ASYNC ERROR]: $error\n$stack');
+    return true;
+  };
+
   // Initialize Firebase & background messaging
   try {
     await Firebase.initializeApp();
