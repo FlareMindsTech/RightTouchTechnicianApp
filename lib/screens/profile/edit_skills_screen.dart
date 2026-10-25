@@ -150,7 +150,7 @@ class _EditSkillsScreenState extends ConsumerState<EditSkillsScreen> {
 
       final result = await repository.addSkill(
         serviceId,
-        int.parse(_expController.text.trim()),
+        int.tryParse(_expController.text.trim()) ?? 0,
       );
 
       if (mounted) {
