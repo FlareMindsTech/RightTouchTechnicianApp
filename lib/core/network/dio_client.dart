@@ -46,11 +46,23 @@ class DioClient {
             debugPrint(
               '🌐 REQUEST[${options.method}] => PATH: ${options.path}',
             );
-            debugPrint('📋 HEADERS: ${options.headers}');
+            final sanitizedHeaders = Map<String, dynamic>.from(options.headers);
+            if (sanitizedHeaders.containsKey('Authorization')) {
+              sanitizedHeaders['Authorization'] = 'Bearer [REDACTED]';
+            }
+            debugPrint('📋 HEADERS: $sanitizedHeaders');
             if (options.data is FormData) {
               debugPrint('📦 DATA: Multipart/FormData');
               for (var field in (options.data as FormData).fields) {
-                debugPrint('   - ${field.key}: ${field.value}');
+                final keyLower = field.key.toLowerCase();
+                final isSensitive = keyLower.contains('password') ||
+                    keyLower.contains('otp') ||
+                    keyLower.contains('token') ||
+                    keyLower.contains('aadhar') ||
+                    keyLower.contains('aadhaar') ||
+                    keyLower.contains('pan') ||
+                    keyLower.contains('account');
+                debugPrint('   - ${field.key}: ${isSensitive ? "[REDACTED]" : field.value}');
               }
               for (var file in (options.data as FormData).files) {
                 debugPrint(
@@ -58,7 +70,7 @@ class DioClient {
                 );
               }
             } else {
-              debugPrint('📦 DATA: ${options.data}');
+              debugPrint('📦 DATA: ${_sanitizeData(options.data)}');
             }
           }
           return handler.next(options);
@@ -81,7 +93,7 @@ class DioClient {
             debugPrint('   Message: ${err.message}');
             if (err.error != null) debugPrint('   Error: ${err.error}');
             if (err.response != null) {
-              debugPrint('   Response Data: ${err.response?.data}');
+              debugPrint('   Response Data: ${_sanitizeData(err.response?.data)}');
             }
           }
 
@@ -183,5 +195,31 @@ class DioClient {
       queryParameters: queryParameters,
       options: options,
     );
+  }
+
+  static dynamic _sanitizeData(dynamic data) {
+    if (data is Map) {
+      final sanitized = <String, dynamic>{};
+      for (final entry in data.entries) {
+        final keyStr = entry.key.toString().toLowerCase();
+        if (keyStr.contains('password') ||
+            keyStr.contains('otp') ||
+            keyStr.contains('token') ||
+            keyStr.contains('aadhar') ||
+            keyStr.contains('aadhaar') ||
+            keyStr.contains('pan') ||
+            keyStr.contains('account') ||
+            keyStr.contains('secret') ||
+            keyStr.contains('authorization')) {
+          sanitized[entry.key.toString()] = '[REDACTED]';
+        } else {
+          sanitized[entry.key.toString()] = _sanitizeData(entry.value);
+        }
+      }
+      return sanitized;
+    } else if (data is List) {
+      return data.map((e) => _sanitizeData(e)).toList();
+    }
+    return data;
   }
 }

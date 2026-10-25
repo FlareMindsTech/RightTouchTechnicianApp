@@ -143,6 +143,11 @@ void main() async {
     ),
   );
 
+  // SEC-08: Silence all debug logs in production release builds
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
+
   runApp(const ProviderScope(child: RightTouchApp()));
 }
 
