@@ -13,6 +13,7 @@ import 'package:right_touch/widgets/rt_loader.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:right_touch/features/map/providers/map_theme_provider.dart';
+import 'package:right_touch/features/map/services/cached_tile_provider.dart';
 import 'package:right_touch/utils/app_theme.dart';
 
 class JobDetailsScreen extends ConsumerStatefulWidget {
@@ -210,6 +211,11 @@ class _JobDetailsScreenState extends ConsumerState<JobDetailsScreen> {
                           urlTemplate: mapTheme.urlTemplate,
                           subdomains: mapTheme.subdomains,
                           userAgentPackageName: 'com.righttouch.technician',
+                          tileProvider: CachedTileProvider.instance,
+                          zoomOffset: mapTheme.zoomOffset,
+                          minZoom: mapTheme.minZoom,
+                          maxZoom: mapTheme.maxZoom,
+                          keepBuffer: 2,
                         ),
                         MarkerLayer(
                           markers: [

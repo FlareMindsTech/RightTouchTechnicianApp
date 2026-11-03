@@ -18,6 +18,11 @@
         </pin-set> -->
     </domain-config>
     
+    <!-- Server IP configuration (HTTP cleartext allowed) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">13.206.118.180</domain>
+    </domain-config>
+    
     <!-- Debug configuration - allow localhost for development -->
     <debug-overrides>
         <trust-anchors>

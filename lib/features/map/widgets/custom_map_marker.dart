@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import 'package:right_touch/utils/app_theme.dart';
 
 class UserLocationBeaconMarker extends StatefulWidget {
@@ -85,18 +85,15 @@ class _UserLocationBeaconMarkerState extends State<UserLocationBeaconMarker>
             );
           },
         ),
-        // Directional Heading Indicator (if available)
+        // Google Maps-style Directional Beam Cone
         if (widget.heading != null && widget.heading! > 0)
           Transform.rotate(
             angle: (widget.heading! * (math.pi / 180.0)),
-            child: Container(
-              width: 44,
-              height: 44,
-              alignment: Alignment.topCenter,
-              child: const Icon(
-                Icons.navigation,
-                size: 16,
-                color: AppTheme.blue,
+            child: SizedBox(
+              width: 70,
+              height: 70,
+              child: CustomPaint(
+                painter: _HeadingBeamPainter(),
               ),
             ),
           ),
@@ -120,6 +117,35 @@ class _UserLocationBeaconMarkerState extends State<UserLocationBeaconMarker>
       ],
     );
   }
+}
+
+class _HeadingBeamPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final paint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFF1E88E5).withValues(alpha: 0.5),
+          const Color(0xFF1E88E5).withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: size.width / 2))
+      ..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(center.dx, center.dy)
+      ..arcTo(
+        Rect.fromCircle(center: center, radius: size.width / 2),
+        -math.pi / 2 - 0.45,
+        0.9,
+        false,
+      )
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class JobPinMarker extends StatelessWidget {

@@ -5,6 +5,13 @@ allprojects {
         google()
         mavenCentral()
     }
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            substitute(module("com.github.scottyab:rootbeer:0.1.0"))
+                .using(module("com.scottyab:rootbeer-lib:0.1.1"))
+                .because("16 KB page size support")
+        }
+    }
 }
 
 val newBuildDir: Directory =

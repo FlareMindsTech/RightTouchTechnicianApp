@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:right_touch/config/api_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PlaceSearchResult {
@@ -35,6 +36,23 @@ class PlaceSearchResult {
     );
   }
 
+  factory PlaceSearchResult.fromMapTilerJson(Map<String, dynamic> json) {
+    final geometry = json['geometry'] as Map<String, dynamic>?;
+    final coords = geometry?['coordinates'] as List<dynamic>? ?? [0.0, 0.0];
+    final lon = (coords[0] as num).toDouble();
+    final lat = (coords[1] as num).toDouble();
+    final text = json['text']?.toString() ?? 'Unknown Place';
+    final placeName = json['place_name']?.toString() ?? text;
+
+    return PlaceSearchResult(
+      displayName: placeName,
+      title: text,
+      location: LatLng(lat, lon),
+      category: json['place_type'] is List ? (json['place_type'] as List).firstOrNull?.toString() : null,
+      type: 'poi',
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'display_name': displayName,
         'title': title,
@@ -50,12 +68,15 @@ class GeocodingService {
   static const String _nominatimUrl = 'https://nominatim.openstreetmap.org';
   static const String _recentSearchesKey = 'map_recent_searches_list';
 
+  // In-memory LRU cache for reverse-geocoded coordinates (rounded to ~11m precision)
+  static final Map<String, PlaceSearchResult> _reverseCache = {};
+
   GeocodingService({Dio? dio})
       : _dio = dio ??
             Dio(
               BaseOptions(
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
+                connectTimeout: const Duration(seconds: 8),
+                receiveTimeout: const Duration(seconds: 8),
                 headers: {
                   'User-Agent': 'RightTouchTechnicianApp/2.0 (partner-support@righttouch.com)',
                   'Accept-Language': 'en',
@@ -88,6 +109,35 @@ class GeocodingService {
       }
     }
 
+    // 1. Try MapTiler Geocoding if API key is present
+    final mapTilerKey = ApiConfig.mapTilerKey;
+    if (mapTilerKey.isNotEmpty) {
+      try {
+        final response = await _dio.get(
+          'https://api.maptiler.com/geocoding/${Uri.encodeComponent(trimmed)}.json',
+          queryParameters: {
+            'key': mapTilerKey,
+            'limit': '5',
+          },
+        );
+
+        if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+          final features = response.data['features'] as List<dynamic>? ?? [];
+          if (features.isNotEmpty) {
+            return features
+                .map((f) => PlaceSearchResult.fromMapTilerJson(f as Map<String, dynamic>))
+                .where((res) => res.location.latitude != 0.0 || res.location.longitude != 0.0)
+                .toList();
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ MapTiler geocoding search failed: $e');
+        }
+      }
+    }
+
+    // 2. Fallback to Nominatim
     try {
       final response = await _dio.get(
         '$_nominatimUrl/search',
@@ -116,6 +166,41 @@ class GeocodingService {
 
   /// Reverse geocodes a [location] into an address description.
   Future<PlaceSearchResult?> reverseGeocode(LatLng location) async {
+    // Check in-memory cache (~10-meter rounding)
+    final cacheKey =
+        '${location.latitude.toStringAsFixed(4)},${location.longitude.toStringAsFixed(4)}';
+    if (_reverseCache.containsKey(cacheKey)) {
+      return _reverseCache[cacheKey];
+    }
+
+    // 1. Try MapTiler Reverse Geocoding
+    final mapTilerKey = ApiConfig.mapTilerKey;
+    if (mapTilerKey.isNotEmpty) {
+      try {
+        final response = await _dio.get(
+          'https://api.maptiler.com/geocoding/${location.longitude},${location.latitude}.json',
+          queryParameters: {
+            'key': mapTilerKey,
+            'limit': '1',
+          },
+        );
+
+        if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+          final features = response.data['features'] as List<dynamic>? ?? [];
+          if (features.isNotEmpty) {
+            final result = PlaceSearchResult.fromMapTilerJson(features.first as Map<String, dynamic>);
+            _reverseCache[cacheKey] = result;
+            return result;
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ MapTiler reverse geocode error: $e');
+        }
+      }
+    }
+
+    // 2. Fallback to Nominatim
     try {
       final response = await _dio.get(
         '$_nominatimUrl/reverse',
@@ -127,7 +212,9 @@ class GeocodingService {
       );
 
       if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
-        return PlaceSearchResult.fromJson(response.data as Map<String, dynamic>);
+        final result = PlaceSearchResult.fromJson(response.data as Map<String, dynamic>);
+        _reverseCache[cacheKey] = result;
+        return result;
       }
     } catch (e) {
       if (kDebugMode) {
@@ -141,30 +228,37 @@ class GeocodingService {
   Future<List<PlaceSearchResult>> getRecentSearches() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonList = prefs.getStringList(_recentSearchesKey) ?? [];
-      return jsonList
-          .map((item) => PlaceSearchResult.fromJson(json.decode(item) as Map<String, dynamic>))
+      final list = prefs.getStringList(_recentSearchesKey) ?? [];
+      return list
+          .map((item) => PlaceSearchResult.fromJson(jsonDecode(item) as Map<String, dynamic>))
           .toList();
     } catch (_) {
       return [];
     }
   }
 
-  /// Saves a search result to the recent searches cache (max 6 items).
-  Future<void> saveRecentSearch(PlaceSearchResult result) async {
+  /// Saves a [place] to recent searches.
+  Future<void> saveRecentSearch(PlaceSearchResult place) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      var list = await getRecentSearches();
-      list.removeWhere((item) =>
-          item.displayName == result.displayName ||
-          (item.location.latitude == result.location.latitude &&
-              item.location.longitude == result.location.longitude));
-      list.insert(0, result);
-      if (list.length > 6) {
-        list = list.sublist(0, 6);
+      final list = prefs.getStringList(_recentSearchesKey) ?? [];
+      final encoded = jsonEncode(place.toJson());
+
+      list.removeWhere((item) {
+        try {
+          final map = jsonDecode(item) as Map<String, dynamic>;
+          return map['display_name'] == place.displayName;
+        } catch (_) {
+          return false;
+        }
+      });
+
+      list.insert(0, encoded);
+      if (list.length > 5) {
+        list.removeRange(5, list.length);
       }
-      final jsonList = list.map((item) => json.encode(item.toJson())).toList();
-      await prefs.setStringList(_recentSearchesKey, jsonList);
+
+      await prefs.setStringList(_recentSearchesKey, list);
     } catch (_) {}
   }
 }

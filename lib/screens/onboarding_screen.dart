@@ -21,21 +21,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final List<Map<String, String>> _pages = [
     {
       'image':
-          'https://res.cloudinary.com/dp6i6moil/image/upload/v1771396477/iti-solar-technician-electrical_nm8zqn.png',
+          'assets/images/onboarding_1.jpg',
       'title': "Welcome to Right Touch",
       'description':
           "Your premium destination for professional grooming and lifestyle services. We bring the experts to you.",
     },
     {
       'image':
-          'https://res.cloudinary.com/dp6i6moil/image/upload/v1771396415/onboarding_appliance_hgdtrw.webp',
+          'assets/images/onboarding_2.jpg',
       'title': "Reliable Home Services",
       'description':
           "From plumbing to electrical work, get top-rated professionals for all your home maintenance needs.",
     },
     {
       'image':
-          'https://res.cloudinary.com/dp6i6moil/image/upload/v1771396415/onboarding_plumber_y5l9o6.webp',
+          'assets/images/onboarding_3.jpg',
       'title': "Efficient & Trustworthy",
       'description':
           "Experience seamless service booking with verified technicians and transparent pricing.",
@@ -228,7 +228,24 @@ class OnboardingPage extends StatelessWidget {
                   bottomLeft: Radius.circular(40),
                   bottomRight: Radius.circular(40),
                 ),
-                child: CachedNetworkImage(
+                child: image.startsWith('assets/')
+                    ? Image.asset(
+                        image,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppTheme.grey[100],
+                          child: Center(
+                            child: Icon(
+                              Icons.home_repair_service_rounded,
+                              size: 80,
+                              color: AppTheme.primaryColor.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ),
+                      )
+                    : CachedNetworkImage(
                   imageUrl: image,
                   width: double.infinity,
                   height: double.infinity,

@@ -178,7 +178,7 @@ class _SearchPlacesBarState extends State<SearchPlacesBar> {
               shrinkWrap: true,
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: displayList.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, indent: 50),
+              separatorBuilder: (_, _) => const Divider(height: 1, indent: 50),
               itemBuilder: (context, index) {
                 final place = displayList[index];
                 final isRecent = _controller.text.trim().isEmpty;

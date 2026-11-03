@@ -238,7 +238,7 @@ class _JobCompletionOtpSheetState extends ConsumerState<JobCompletionOtpSheet> {
               child: Container(
                 width: 64,
                 height: 64,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppTheme.primaryLight,
                   shape: BoxShape.circle,
                 ),
@@ -408,7 +408,7 @@ class _JobCompletionOtpSheetState extends ConsumerState<JobCompletionOtpSheet> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
+        const Text(
           "Didn't receive code? ",
           style: TextStyle(
             color: AppTheme.black54,

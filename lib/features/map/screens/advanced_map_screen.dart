@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:right_touch/data/models/job.dart';
 import 'package:right_touch/features/map/models/route_model.dart';
 import 'package:right_touch/features/map/providers/map_theme_provider.dart';
+import 'package:right_touch/features/map/services/cached_tile_provider.dart';
 import 'package:right_touch/features/map/services/geocoding_service.dart';
 import 'package:right_touch/features/map/services/map_location_service.dart';
 import 'package:right_touch/features/map/services/routing_service.dart';
@@ -116,6 +117,52 @@ class _AdvancedMapScreenState extends ConsumerState<AdvancedMapScreen> {
         unawaited(_fetchRoute(center, _activeDestination!));
       }
     }
+
+    // 2. Start continuous high-accuracy location tracking
+    _startContinuousLocationUpdates();
+  }
+
+  void _startContinuousLocationUpdates() {
+    _locationService.startLocationUpdates(
+      onUpdate: (newPos, heading, accuracy) {
+        if (!mounted) return;
+        final wasInitial = _userLocation == null;
+        setState(() {
+          _userLocation = newPos;
+          _userHeading = heading;
+          _userAccuracy = accuracy;
+        });
+
+        // Auto-snap to real GPS if opened on fallback
+        if (wasInitial && _activeDestination == null && widget.jobs.isEmpty) {
+          _mapController.move(newPos, 16.0);
+        }
+
+        // Auto pan if tracking
+        if (_isTrackingUser) {
+          _mapController.move(newPos, _isNavigating ? 17.0 : 16.0);
+          if (heading > 0 && _isNavigating) {
+            _mapController.rotate(-heading);
+          }
+        }
+
+        // Off-route check during navigation
+        if (_isNavigating && _currentRoute != null && _currentRoute!.points.isNotEmpty) {
+          final isDiverged = RoutingService.isOffRoute(
+            currentLocation: newPos,
+            routePoints: _currentRoute!.points,
+            thresholdMeters: 60,
+          );
+
+          if (isDiverged && !_isOffRoute) {
+            setState(() => _isOffRoute = true);
+            if (_activeDestination != null) {
+              _fetchRoute(newPos, _activeDestination!);
+            }
+          }
+        }
+      },
+    );
   }
 
   void _fitBounds(LatLng p1, LatLng p2) {
@@ -179,47 +226,16 @@ class _AdvancedMapScreenState extends ConsumerState<AdvancedMapScreen> {
 
   void _startLiveNavigation() {
     if (_userLocation == null && _activeDestination == null) return;
-    setState(() => _isNavigating = true);
-    _isTrackingUser = true;
-
-    _locationService.startLocationUpdates(
-      onUpdate: (newPos, heading, accuracy) {
-        if (!mounted) return;
-        setState(() {
-          _userLocation = newPos;
-          _userHeading = heading;
-          _userAccuracy = accuracy;
-        });
-
-        // Auto pan if tracking
-        if (_isTrackingUser) {
-          _mapController.move(newPos, 16.5);
-          if (heading > 0) {
-            _mapController.rotate(-heading);
-          }
-        }
-
-        // Off-route check
-        if (_currentRoute != null && _currentRoute!.points.isNotEmpty) {
-          final isDiverged = RoutingService.isOffRoute(
-            currentLocation: newPos,
-            routePoints: _currentRoute!.points,
-            thresholdMeters: 60,
-          );
-
-          if (isDiverged && !_isOffRoute) {
-            setState(() => _isOffRoute = true);
-            if (_activeDestination != null) {
-              _fetchRoute(newPos, _activeDestination!);
-            }
-          }
-        }
-      },
-    );
+    setState(() {
+      _isNavigating = true;
+      _isTrackingUser = true;
+    });
+    if (_userLocation != null) {
+      _mapController.move(_userLocation!, 17.0);
+    }
   }
 
   void _stopLiveNavigation() {
-    _locationService.stopLocationUpdates();
     setState(() {
       _isNavigating = false;
       _isTrackingUser = false;
@@ -284,9 +300,12 @@ class _AdvancedMapScreenState extends ConsumerState<AdvancedMapScreen> {
               initialCenter: _activeDestination ??
                   _userLocation ??
                   const LatLng(13.0827, 80.2707),
-              initialZoom: 14.0,
+              initialZoom: 16.0,
               minZoom: currentTheme.minZoom,
               maxZoom: currentTheme.maxZoom,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all,
+              ),
               onPositionChanged: (camera, hasGesture) {
                 if (hasGesture && _isTrackingUser) {
                   setState(() => _isTrackingUser = false);
@@ -304,12 +323,34 @@ class _AdvancedMapScreenState extends ConsumerState<AdvancedMapScreen> {
               },
             ),
             children: [
-              // Tile Layer from Theme
+              // High-Reliability Persistent Cached Tile Layer
               TileLayer(
                 urlTemplate: currentTheme.urlTemplate,
                 subdomains: currentTheme.subdomains,
                 userAgentPackageName: 'com.righttouch.technician',
+                tileProvider: CachedTileProvider.instance,
+                zoomOffset: currentTheme.zoomOffset,
+                minZoom: currentTheme.minZoom,
+                maxZoom: currentTheme.maxZoom,
+                keepBuffer: 4,
+                panBuffer: 2,
+                evictErrorTileStrategy: EvictErrorTileStrategy.dispose,
               ),
+
+              // User GPS Accuracy Circle (Google Maps style)
+              if (_userLocation != null)
+                CircleLayer(
+                  circles: [
+                    CircleMarker(
+                      point: _userLocation!,
+                      radius: (_userAccuracy ?? 25.0).clamp(10.0, 50.0),
+                      useRadiusInMeter: true,
+                      color: const Color(0x1A1E88E5),
+                      borderColor: const Color(0x4D1E88E5),
+                      borderStrokeWidth: 1.5,
+                    ),
+                  ],
+                ),
 
               // Destination Geofence Arrival Radius (100m)
               if (_activeDestination != null)

@@ -196,13 +196,15 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Job ID',
+                        'Service Booking',
                         style: textTheme.labelMedium?.copyWith(
                           color: AppTheme.textSecondary,
                         ),
                       ),
                       Text(
-                        widget.task.jobId,
+                        widget.task.faultReason.isNotEmpty
+                            ? widget.task.faultReason
+                            : 'Confirmed Service Order',
                         style: textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textPrimary,

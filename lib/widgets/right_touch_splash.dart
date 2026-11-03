@@ -273,9 +273,9 @@ class _LogoPainter extends CustomPainter {
         gr,
         Paint()
           ..shader = ui.Gradient.radial(_c, gr, [
-            _yellow.withOpacity((.6 * gOpacity).clamp(0.0, 1.0)),
-            _yellow.withOpacity((.18 * gOpacity).clamp(0.0, 1.0)),
-            _yellow.withOpacity(0),
+            _yellow.withValues(alpha: (.6 * gOpacity).clamp(0.0, 1.0)),
+            _yellow.withValues(alpha: (.18 * gOpacity).clamp(0.0, 1.0)),
+            _yellow.withValues(alpha: 0),
           ], [0, .5, 1]),
       );
     }
@@ -294,7 +294,7 @@ class _LogoPainter extends CustomPainter {
         p1,
         p2,
         Paint()
-          ..color = _ink.withOpacity(op.clamp(0.0, 1.0))
+          ..color = _ink.withValues(alpha: op.clamp(0.0, 1.0))
           ..strokeWidth = 2
           ..strokeCap = StrokeCap.round,
       );
@@ -309,7 +309,7 @@ class _LogoPainter extends CustomPainter {
           _c,
           _r + 2,
           Paint()
-            ..color = _yellow.withOpacity((.9 * f).clamp(0.0, 1.0))
+            ..color = _yellow.withValues(alpha: (.9 * f).clamp(0.0, 1.0))
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
         );
       }
@@ -337,7 +337,7 @@ class _LogoPainter extends CustomPainter {
         const Offset(49, 38.5),
         3 * (0.3 + 5.7 * ripple),
         Paint()
-          ..color = _green.withOpacity((1 - ripple).clamp(0.0, 1.0))
+          ..color = _green.withValues(alpha: (1 - ripple).clamp(0.0, 1.0))
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.2,
       );
@@ -354,20 +354,20 @@ class _LogoPainter extends CustomPainter {
       canvas.translate(-53, -64);
       final op = hand.clamp(0.0, 1.0);
       final hp = _handPath;
-      canvas.drawPath(hp, Paint()..color = Colors.white.withOpacity(op));
+      canvas.drawPath(hp, Paint()..color = Colors.white.withValues(alpha: op));
       canvas.drawPath(
         Path()
           ..moveTo(71, 64)
           ..lineTo(71, 82)
           ..quadraticBezierTo(70, 86, 64, 88),
         Paint()
-          ..color = const Color(0xFFCCCCCC).withOpacity(op)
+          ..color = const Color(0xFFCCCCCC).withValues(alpha: op)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.5
           ..strokeCap = StrokeCap.round,
       );
       final line = Paint()
-        ..color = _ink.withOpacity(op)
+        ..color = _ink.withValues(alpha: op)
         ..style = PaintingStyle.stroke
         ..strokeJoin = StrokeJoin.round
         ..strokeCap = StrokeCap.round;

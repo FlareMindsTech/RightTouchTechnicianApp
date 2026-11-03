@@ -8,7 +8,7 @@ class MapThemeNotifier extends Notifier<AppMapTheme> {
   @override
   AppMapTheme build() {
     _loadSavedTheme();
-    return AppMapTheme.getTheme(MapThemeType.streets);
+    return AppMapTheme.getTheme(MapThemeType.buildings);
   }
 
   Future<void> _loadSavedTheme() async {

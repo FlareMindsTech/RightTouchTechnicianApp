@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sms_autofill/sms_autofill.dart';
 import 'package:right_touch/data/repositories/auth_repository.dart';
 import 'package:right_touch/providers/auth_provider.dart';
 import 'package:right_touch/screens/auth/widgets/otp_header_section.dart';
@@ -23,7 +24,7 @@ class OtpScreen extends ConsumerStatefulWidget {
 }
 
 class _OtpScreenState extends ConsumerState<OtpScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, CodeAutoFill {
   final List<TextEditingController> _controllers = List.generate(
     4,
     (index) => TextEditingController(),
@@ -41,6 +42,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
   @override
   void initState() {
     super.initState();
+    listenForCode();
     _startTimer();
     _animationController = AnimationController(
       vsync: this,
@@ -191,8 +193,38 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
   }
 
   @override
+  void codeUpdated() {
+    if (code != null && code!.isNotEmpty) {
+      _fillOtp(code!);
+    }
+  }
+
+  void _fillOtp(String rawCode) {
+    final digits = Validators.normalizeDigitsOnly(rawCode);
+    for (int i = 0; i < 4; i++) {
+      if (i < digits.length) {
+        _controllers[i].text = digits[i];
+      } else {
+        _controllers[i].clear();
+      }
+    }
+
+    if (digits.length >= 4) {
+      if (mounted) {
+        FocusScope.of(context).unfocus();
+        HapticFeedback.mediumImpact();
+        _handleVerify(widget.identifier ?? "");
+      }
+    } else if (digits.isNotEmpty) {
+      final nextIndex = digits.length < 4 ? digits.length : 3;
+      _focusNodes[nextIndex].requestFocus();
+    }
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
+    cancel();
     _animationController.dispose();
     for (var controller in _controllers) {
       controller.dispose();
@@ -286,6 +318,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
                 controllers: _controllers,
                 focusNodes: _focusNodes,
                 onChanged: _onChanged,
+                onOtpPasted: _fillOtp,
               ),
               const SizedBox(height: 40),
               SizedBox(

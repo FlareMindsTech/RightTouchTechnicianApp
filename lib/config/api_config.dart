@@ -13,7 +13,7 @@ class ApiConfig {
     }
     const fromEnv = String.fromEnvironment('BASE_URL');
     if (fromEnv.isNotEmpty) return _cleanUrl(fromEnv);
-    return 'https://api.righttouchservice.com';
+    return 'http://13.206.118.180:7372';
   }
 
   static String _cleanUrl(String url) {
@@ -65,7 +65,9 @@ class ApiConfig {
       final key = dotenv.env['MAP_TILER_KEY'];
       if (key != null && key.isNotEmpty) return key;
     }
-    return const String.fromEnvironment('MAP_TILER_KEY');
+    const fromEnv = String.fromEnvironment('MAP_TILER_KEY');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    return 'ayIBWPUrJmKL2F8jy6kO';
   }
 
   // Full URLs
