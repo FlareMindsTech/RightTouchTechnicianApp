@@ -55,7 +55,7 @@ class ProfileProfessionalFields extends StatelessWidget {
         ProfileSetupTextField(
           controller: expController,
           label: "Experience (Years)",
-          hint: "Years of experience",
+          hint: "0",
           keyboardType: TextInputType.number,
           maxLength: 2,
           inputFormatters: [Validators.digitsOnlyFormatter],

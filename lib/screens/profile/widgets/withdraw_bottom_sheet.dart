@@ -86,6 +86,7 @@ class _WithdrawBottomSheetState extends State<WithdrawBottomSheet> {
               decoration: InputDecoration(
                 labelText: 'Amount',
                 prefixText: '₹ ',
+                helperText: 'Enter any amount up to available balance',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

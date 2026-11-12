@@ -27,114 +27,6 @@ class MapControlsOverlay extends ConsumerWidget {
     this.onTravelModeChanged,
   });
 
-  void _showThemePicker(BuildContext context, WidgetRef ref) {
-    final currentTheme = ref.read(mapThemeProvider);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: AppTheme.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Map Styles & Themes",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.black,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: AppTheme.grey),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: AppMapTheme.availableThemes.map((theme) {
-                  final isSelected = theme.type == currentTheme.type;
-                  return InkWell(
-                    onTap: () {
-                      ref.read(mapThemeProvider.notifier).setTheme(theme.type);
-                      Navigator.pop(context);
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: (MediaQuery.of(context).size.width - 64) / 2,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.primaryColor.withValues(alpha: 0.1)
-                            : AppTheme.grey.shade100,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.primaryColor
-                              : AppTheme.grey.shade300,
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            theme.icon,
-                            color: isSelected
-                                ? AppTheme.primaryColor
-                                : AppTheme.black87,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              theme.name,
-                              style: TextStyle(
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                                color: isSelected
-                                    ? AppTheme.primaryColor
-                                    : AppTheme.black87,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 20),
-              // Attribution text
-              Center(
-                child: Text(
-                  currentTheme.attribution,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.grey,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildCircleButton({
     required IconData icon,
     required VoidCallback onTap,
@@ -176,6 +68,9 @@ class MapControlsOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentTheme = ref.watch(mapThemeProvider);
+    final isSatellite = currentTheme.type == MapThemeType.satellite;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -250,13 +145,45 @@ class MapControlsOverlay extends ConsumerWidget {
             ),
           ),
 
-        // Map Theme Selector
+        // Instant 1-Tap Map Style Switcher (Street <-> Satellite)
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: _buildCircleButton(
-            icon: Icons.layers_outlined,
-            onTap: () => _showThemePicker(context, ref),
-            tooltip: "Change Map Style",
+            icon: isSatellite ? Icons.map_rounded : Icons.satellite_alt_rounded,
+            iconColor: isSatellite ? const Color(0xFF2E7D32) : const Color(0xFF1565C0),
+            onTap: () {
+              final newTheme =
+                  isSatellite ? MapThemeType.buildings : MapThemeType.satellite;
+              ref.read(mapThemeProvider.notifier).setTheme(newTheme);
+
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    isSatellite
+                        ? '🗺️ Switched to Google Streets'
+                        : '🛰️ Switched to Google Satellite Hybrid',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  duration: const Duration(milliseconds: 1400),
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).size.height * 0.4,
+                    left: 50,
+                    right: 50,
+                  ),
+                  backgroundColor: const Color(0xFF0D1B2A),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              );
+            },
+            tooltip: isSatellite ? "Switch to Streets" : "Switch to Satellite",
           ),
         ),
 

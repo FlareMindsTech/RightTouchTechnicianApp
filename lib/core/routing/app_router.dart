@@ -74,23 +74,37 @@ String? appRouterRedirect(AuthState authState, String location) {
   final isOtp = location == '/otp';
 
   final isAuthRoute = isOnboarding || isLogin || isRegister || isOtp;
+  final isRegFlowRoute = location == '/profile-setup' ||
+      location == '/kyc-documents' ||
+      location == '/bank-details';
 
   return authState.maybeWhen(
     authenticated: (user) {
-      if (!user.isProfileComplete) {
-        return location == '/profile-setup' ? null : '/profile-setup';
-      } else if (!user.areKycDocumentsSubmitted) {
-        return location == '/kyc-documents' ? null : '/kyc-documents';
-      } else if (!user.hasBankDetails) {
-        return location == '/bank-details' ? null : '/bank-details';
-      } else {
-        if (isAuthRoute ||
-            location == '/profile-setup' ||
-            location == '/kyc-documents' ||
-            location == '/bank-details') {
+      final isFullySetup = user.isProfileComplete &&
+          user.areKycDocumentsSubmitted &&
+          user.hasBankDetails;
+
+      if (isFullySetup) {
+        if (isAuthRoute || isRegFlowRoute) {
           return '/dashboard';
         }
         return null;
+      }
+
+      // If user is already inside the registration flow, let RegistrationFlowScreen
+      // manage the PageView sliding smoothly between steps without GoRouter tearing
+      // down and rebuilding the widget tree on intermediate state changes.
+      if (isRegFlowRoute) {
+        return null;
+      }
+
+      // If coming from an auth route or splash, enter at the appropriate step:
+      if (!user.isProfileComplete) {
+        return '/profile-setup';
+      } else if (!user.areKycDocumentsSubmitted) {
+        return '/kyc-documents';
+      } else {
+        return '/bank-details';
       }
     },
     unauthenticated: () {

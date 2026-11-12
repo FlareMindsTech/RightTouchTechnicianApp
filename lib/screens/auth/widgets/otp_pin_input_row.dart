@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:right_touch/utils/app_theme.dart';
@@ -45,12 +44,11 @@ class _OtpPinInputRowState extends State<OtpPinInputRow>
       if (mounted) setState(() {});
     });
 
-    // Listen to changes on external controllers (e.g. when cleared or updated externally)
     for (var controller in widget.controllers) {
       controller.addListener(_onExternalChanged);
     }
 
-    // Auto-focus after frame
+    // Auto-focus the input after screen render
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _masterFocusNode.requestFocus();
@@ -117,18 +115,19 @@ class _OtpPinInputRowState extends State<OtpPinInputRow>
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Hidden single input capturing Gboard suggestions, SMS autofill & keyboard
-        Opacity(
-          opacity: 0.0,
-          child: SizedBox(
-            width: 1,
-            height: 1,
+        // Transparent TextField spanning the full area to retain soft keyboard focus reliably
+        Positioned.fill(
+          child: Opacity(
+            opacity: 0.01,
             child: TextField(
               controller: _masterController,
               focusNode: _masterFocusNode,
               keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
               autofillHints: const [AutofillHints.oneTimeCode],
               maxLength: 4,
+              cursorColor: Colors.transparent,
+              style: const TextStyle(color: Colors.transparent),
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(4),
@@ -136,19 +135,17 @@ class _OtpPinInputRowState extends State<OtpPinInputRow>
               decoration: const InputDecoration(
                 counterText: "",
                 border: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
               ),
             ),
           ),
         ),
 
-        // Visual 4-Digit Display Boxes
-        GestureDetector(
-          onTap: () {
-            if (!_masterFocusNode.hasFocus) {
-              _masterFocusNode.requestFocus();
-            }
-          },
-          behavior: HitTestBehavior.opaque,
+        // Visual 4-Digit Display Boxes (Ignore pointer so taps pass straight to TextField)
+        IgnorePointer(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(4, (index) {
@@ -159,21 +156,32 @@ class _OtpPinInputRowState extends State<OtpPinInputRow>
 
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                width: 66,
-                height: 66,
+                width: 68,
+                height: 68,
                 decoration: BoxDecoration(
                   color: isBoxFilled
-                      ? AppTheme.primaryColor.withValues(alpha: 0.05)
-                      : AppTheme.grey.shade50,
-                  borderRadius: BorderRadius.circular(16),
+                      ? AppTheme.primaryColor.withValues(alpha: 0.06)
+                      : (isCurrentActive
+                          ? Colors.white
+                          : AppTheme.grey.shade50),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: isCurrentActive
                         ? AppTheme.primaryColor
                         : (isBoxFilled
-                            ? AppTheme.primaryColor.withValues(alpha: 0.4)
+                            ? AppTheme.primaryColor.withValues(alpha: 0.5)
                             : AppTheme.grey.shade300),
-                    width: isCurrentActive ? 2.2 : 1.5,
+                    width: isCurrentActive ? 2.5 : 1.5,
                   ),
+                  boxShadow: isCurrentActive
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Center(
                   child: isBoxFilled
@@ -189,9 +197,12 @@ class _OtpPinInputRowState extends State<OtpPinInputRow>
                           ? FadeTransition(
                               opacity: _cursorBlinkController,
                               child: Container(
-                                width: 2,
+                                width: 2.5,
                                 height: 26,
-                                color: AppTheme.primaryColor,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
                               ),
                             )
                           : const SizedBox.shrink()),

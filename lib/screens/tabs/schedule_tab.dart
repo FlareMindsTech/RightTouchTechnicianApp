@@ -55,23 +55,67 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
     _refreshTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
       if (mounted) {
         ref.invalidate(currentJobsProvider);
+        ref.invalidate(scheduledJobsProvider);
       }
     });
   }
 
   Future<void> _refreshAll() async {
     ref.invalidate(currentJobsProvider);
+    ref.invalidate(scheduledJobsProvider);
     ref.invalidate(historyJobsProvider);
     ref.invalidate(dashboardDataProvider);
+  }
+
+  String _formatScheduledDate(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final jobDay = DateTime(dt.year, dt.month, dt.day);
+    final diffDays = jobDay.difference(today).inDays;
+
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final monthName = months[dt.month - 1];
+
+    if (diffDays == 0) {
+      return "Today • ${dt.day} $monthName";
+    } else if (diffDays == 1) {
+      return "Tomorrow • ${dt.day} $monthName";
+    } else if (diffDays == -1) {
+      return "Yesterday • ${dt.day} $monthName";
+    } else {
+      final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      final weekdayName = weekdays[dt.weekday - 1];
+      return "$weekdayName, ${dt.day} $monthName ${dt.year}";
+    }
+  }
+
+  String _formatSlotTime(Job job) {
+    if (job.scheduledTime != null && job.scheduledTime!.isNotEmpty) {
+      return job.scheduledTime!;
+    }
+    if (job.scheduledAt != null && job.scheduledAt!.isNotEmpty) {
+      final dt = DateTime.tryParse(job.scheduledAt!);
+      if (dt != null) {
+        final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+        final minute = dt.minute.toString().padLeft(2, '0');
+        final period = dt.hour >= 12 ? 'PM' : 'AM';
+        return "$hour:$minute $period";
+      }
+    }
+    return "Slot Time Not Set";
   }
 
   @override
   Widget build(BuildContext context) {
     final currentJobsAsync = ref.watch(currentJobsProvider);
+    final scheduledJobsAsync = ref.watch(scheduledJobsProvider);
     final historyJobsAsync = ref.watch(historyJobsProvider);
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
           Padding(
@@ -105,9 +149,11 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
                             decoration: BoxDecoration(
                               color: AppTheme.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppTheme.grey[200] ?? const Color(0xFFEEEEEE)),
+                              border: Border.all(
+                                color: AppTheme.grey[200] ??
+                                    const Color(0xFFEEEEEE),
+                              ),
                             ),
-
                             child: const Icon(Icons.notifications_outlined,
                                 size: 24),
                           ),
@@ -140,6 +186,7 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
               indicatorColor: AppTheme.primaryColor,
               tabs: [
                 Tab(text: "Pending"),
+                Tab(text: "Scheduled"),
                 Tab(text: "Completed"),
               ],
             ),
@@ -149,7 +196,7 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
                     loading: () => const ListShimmer(),
                     error: (err, stack) => ErrorBoundary(
                       message: ErrorHandler.parseError(err),
-                      showTitle: false, // Removed as per request
+                      showTitle: false,
                       isElevated: true,
                       onRetry: _refreshAll,
                       onLoginAgain: () =>
@@ -166,14 +213,27 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
                         'upcoming',
                         'in_progress',
                       ]),
+                      scheduledJobsAsync.when(
+                        loading: () => const ListShimmer(),
+                        error: (err, stack) => ErrorBoundary(
+                          message: ErrorHandler.parseError(err),
+                          showTitle: false,
+                          isElevated: true,
+                          onRetry: _refreshAll,
+                          onLoginAgain: () =>
+                              ref.read(authProvider.notifier).logout(),
+                        ),
+                        data: (jobs) => _buildScheduledJobList(jobs),
+                      ),
                       _buildSyncJobList(
-                          historyJobsAsync,
-                          [
-                            'completed',
-                            'cancelled',
-                            'rejected',
-                          ],
-                          isCompleted: true),
+                        historyJobsAsync,
+                        [
+                          'completed',
+                          'cancelled',
+                          'rejected',
+                        ],
+                        isCompleted: true,
+                      ),
                     ],
                   ),
           ),
@@ -191,7 +251,7 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
       loading: () => const ListShimmer(),
       error: (err, stack) => ErrorBoundary(
         message: ErrorHandler.parseError(err),
-        showTitle: false, // Removed as per request
+        showTitle: false,
         isElevated: true,
         onRetry: _refreshAll,
         onLoginAgain: () => ref.read(authProvider.notifier).logout(),
@@ -247,8 +307,123 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
               job: job,
               onTap: isCompleted ? null : () => _navigateToServiceDetail(job),
               isClickable: !isCompleted,
-              showCallButton:
-                  !isCompleted, // Only show call button in Pending tab
+              showCallButton: !isCompleted,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildScheduledJobList(List<Job> jobs) {
+    if (jobs.isEmpty) {
+      return _buildEmptyState(
+        "No Scheduled Bookings",
+        "Accepted upcoming appointments with scheduled slots will appear here.",
+      );
+    }
+
+    // Sort scheduled jobs by scheduledAt ascending (earliest first)
+    final sortedJobs = List<Job>.from(jobs);
+    sortedJobs.sort((a, b) {
+      final dtA = DateTime.tryParse(a.scheduledAt ?? '') ?? a.createdAt;
+      final dtB = DateTime.tryParse(b.scheduledAt ?? '') ?? b.createdAt;
+      return dtA.compareTo(dtB);
+    });
+
+    return RefreshIndicator(
+      onRefresh: _refreshAll,
+      child: ListView.builder(
+        physics: const ClampingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+        itemCount: sortedJobs.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Showing ${sortedJobs.length} scheduled ${sortedJobs.length == 1 ? 'job' : 'jobs'}",
+                    style: const TextStyle(color: AppTheme.grey, fontSize: 12),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.calendar_month_rounded,
+                            size: 12, color: AppTheme.primaryColor),
+                        SizedBox(width: 4),
+                        Text(
+                          "Confirmed Slots",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final job = sortedJobs[index - 1];
+          final scheduledDt =
+              DateTime.tryParse(job.scheduledAt ?? '') ?? job.createdAt;
+          final dateHeader = _formatScheduledDate(scheduledDt);
+          final slotLabel = _formatSlotTime(job);
+
+          return FadeInSlide(
+            index: index - 1,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Slot Time Header badge above card
+                Container(
+                  margin: const EdgeInsets.only(left: 4, bottom: 4, top: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F8E9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFC8E6C9)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.schedule_rounded,
+                          size: 14, color: AppTheme.primaryColor),
+                      const SizedBox(width: 6),
+                      Text(
+                        "$dateHeader • $slotLabel",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                JobCard(
+                  job: job,
+                  onTap: () => _navigateToServiceDetail(job),
+                  isClickable: true,
+                  showCallButton: true,
+                ),
+              ],
             ),
           );
         },
@@ -257,7 +432,6 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
   }
 
   Future<void> _navigateToServiceDetail(Job job) async {
-    // Use real API data, with sensible fallbacks
     final faultReasons = job.faultReasonsList;
     final faultReason = (faultReasons != null && faultReasons.isNotEmpty)
         ? faultReasons.join('\n• ')
@@ -290,7 +464,6 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
             "Customer updated on repair status",
           ];
 
-
     final task = TaskModel(
       jobId: job.id,
       location: job.location,
@@ -321,7 +494,6 @@ class _ScheduleTabState extends ConsumerState<ScheduleTab> {
     );
 
     if (result == true) {
-      // Job was completed successfully
       if (mounted) {
         unawaited(_refreshAll());
       }

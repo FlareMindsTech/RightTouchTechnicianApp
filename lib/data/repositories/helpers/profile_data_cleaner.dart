@@ -67,6 +67,42 @@ class ProfileDataCleaner {
       }
     }
 
+    // Normalize rating to double so UserModel json deserialization succeeds cleanly
+    final dynamic rawRating = mergedData['rating'] ??
+        mergedData['averageRating'] ??
+        mergedData['avgRating'] ??
+        (mergedData['technician'] is Map ? mergedData['technician']['rating'] : null) ??
+        (mergedData['profile'] is Map ? mergedData['profile']['rating'] : null);
+
+    if (rawRating != null) {
+      double? parsedRating;
+      int? parsedCount;
+
+      if (rawRating is Map) {
+        final val = rawRating['avg'] ??
+            rawRating['average'] ??
+            rawRating['rating'] ??
+            rawRating['score'] ??
+            rawRating['value'];
+        if (val is num) parsedRating = val.toDouble();
+        if (val is String) parsedRating = double.tryParse(val);
+        final cnt = rawRating['count'] ?? rawRating['totalReviews'];
+        if (cnt is num) parsedCount = cnt.toInt();
+      } else if (rawRating is num) {
+        parsedRating = rawRating.toDouble();
+      } else if (rawRating is String) {
+        parsedRating = double.tryParse(rawRating);
+      }
+
+      if (parsedRating != null) {
+        mergedData['rating'] = parsedRating;
+        mergedData['averageRating'] = parsedRating;
+      }
+      if (parsedCount != null) {
+        mergedData['ratingCount'] = parsedCount;
+      }
+    }
+
     final knownMapFields = <String>{
       'availability',
       'profile',
@@ -74,6 +110,7 @@ class ProfileDataCleaner {
       'rawData',
       'bankDetails',
       'eligibility',
+      'rating',
     };
 
     for (var key in mergedData.keys.toList()) {

@@ -117,6 +117,35 @@ class JobRepository {
     }
   }
 
+  /// Fetches accepted scheduled jobs grouped by scheduled slot
+  Future<List<dynamic>> getAcceptedScheduledJobs({
+    bool forceRefresh = false,
+    int page = 1,
+    int limit = 50,
+  }) async {
+    const cacheKey = 'accepted_scheduled_jobs';
+    if (!forceRefresh && _isCacheValid(cacheKey)) {
+      return _cache[cacheKey]!;
+    }
+
+    try {
+      final response = await _client.get(
+        ApiConfig.acceptedScheduledJobsEndpoint,
+        queryParameters: {'page': page, 'limit': limit},
+      );
+      final raw = response.data;
+      final data = (raw is Map)
+          ? (raw['result'] ?? raw['jobs'] ?? raw['data'] ?? [])
+          : (raw is List ? raw : []);
+
+      final listData = data is List ? data : [];
+      _putCache(cacheKey, listData);
+      return listData;
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e, 'Failed to fetch scheduled jobs'));
+    }
+  }
+
   Future<Map<String, dynamic>> respondToJob(String jobId, String status) async {
     try {
       final response = await _client.put(
@@ -126,6 +155,7 @@ class JobRepository {
       // Invalidate relevant caches
       _cache.remove('broadcast_jobs');
       _cache.remove('current_jobs');
+      _cache.remove('accepted_scheduled_jobs');
       return response.data;
     } on DioException catch (e) {
       throw Exception(_getErrorMessage(e, 'Failed to respond to job'));
@@ -144,10 +174,52 @@ class JobRepository {
       );
       // Invalidate caches
       _cache.remove('current_jobs');
+      _cache.remove('accepted_scheduled_jobs');
       _cache.remove('job_history');
       return response.data;
     } on DioException catch (e) {
       throw Exception(_getErrorMessage(e, 'Failed to update job status'));
+    }
+  }
+
+  /// Technician cancels an assigned job with reason
+  Future<Map<String, dynamic>> cancelJobByTechnician(
+    String bookingId, {
+    required String reason,
+  }) async {
+    try {
+      final response = await _client.put(
+        ApiConfig.cancelJobByTechnicianEndpoint(bookingId),
+        data: {'reason': reason},
+      );
+      // Invalidate caches
+      _cache.remove('current_jobs');
+      _cache.remove('accepted_scheduled_jobs');
+      _cache.remove('job_history');
+      if (response.data is Map<String, dynamic>) {
+        return response.data;
+      }
+      return {'success': true, 'data': response.data};
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e, 'Failed to cancel job'));
+    }
+  }
+
+  /// Re-accept a previously cancelled job within the grace window
+  Future<Map<String, dynamic>> reacceptJob(String bookingId) async {
+    try {
+      final response = await _client.put(
+        ApiConfig.reacceptJobEndpoint(bookingId),
+      );
+      _cache.remove('current_jobs');
+      _cache.remove('accepted_scheduled_jobs');
+      _cache.remove('job_history');
+      if (response.data is Map<String, dynamic>) {
+        return response.data;
+      }
+      return {'success': true, 'data': response.data};
+    } on DioException catch (e) {
+      throw Exception(_getErrorMessage(e, 'Failed to re-accept job'));
     }
   }
 
@@ -191,6 +263,7 @@ class JobRepository {
       );
       // Invalidate caches
       _cache.remove('current_jobs');
+      _cache.remove('accepted_scheduled_jobs');
       _cache.remove('job_history');
       if (response.data is Map<String, dynamic>) {
         return response.data;

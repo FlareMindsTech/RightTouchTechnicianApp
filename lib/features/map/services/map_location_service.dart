@@ -16,6 +16,7 @@ class MapLocationService {
   final ValueNotifier<LatLng?> currentLocation = ValueNotifier<LatLng?>(null);
   final ValueNotifier<double?> currentHeading = ValueNotifier<double?>(null);
   final ValueNotifier<double?> currentAccuracy = ValueNotifier<double?>(null);
+  final ValueNotifier<double?> currentSpeedKmh = ValueNotifier<double?>(null);
   final ValueNotifier<bool> isTrackingActive = ValueNotifier<bool>(false);
 
   /// Checks the current location permission state.
@@ -101,7 +102,7 @@ class MapLocationService {
 
   /// Starts listening to active location updates for navigation or live map tracking.
   void startLocationUpdates({
-    required Function(LatLng position, double heading, double accuracy) onUpdate,
+    required Function(LatLng position, double heading, double accuracy, double speedKmh) onUpdate,
     int distanceFilterMeters = 2,
   }) {
     stopLocationUpdates();
@@ -115,10 +116,12 @@ class MapLocationService {
     ).listen(
       (pos) {
         final latLng = LatLng(pos.latitude, pos.longitude);
+        final speedKmh = pos.speed > 0 ? (pos.speed * 3.6) : 0.0;
         currentLocation.value = latLng;
         currentHeading.value = pos.heading;
         currentAccuracy.value = pos.accuracy;
-        onUpdate(latLng, pos.heading, pos.accuracy);
+        currentSpeedKmh.value = speedKmh;
+        onUpdate(latLng, pos.heading, pos.accuracy, speedKmh);
       },
       onError: (err) {
         if (kDebugMode) {
@@ -164,6 +167,7 @@ class MapLocationService {
     currentLocation.dispose();
     currentHeading.dispose();
     currentAccuracy.dispose();
+    currentSpeedKmh.dispose();
     isTrackingActive.dispose();
   }
 }

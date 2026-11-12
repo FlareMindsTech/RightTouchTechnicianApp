@@ -1,27 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:right_touch/data/models/app_notification.dart';
+import 'package:right_touch/providers/notification_provider.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/widgets/empty_state.dart';
-
-enum NotificationType { job, payment, system }
-
-class NotificationItem {
-  final String id;
-  final String title;
-  final String body;
-  final DateTime timestamp;
-  final NotificationType type;
-  bool isRead;
-
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.body,
-    required this.timestamp,
-    required this.type,
-    this.isRead = false,
-  });
-}
+import 'package:right_touch/widgets/list_shimmer.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -32,66 +15,11 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
-  final List<NotificationItem> _notifications = [
-    NotificationItem(
-      id: '1',
-      title: 'New Service Request Nearby',
-      body:
-          'AC repair & gas filling service requested within 3.2 km of your location.',
-      timestamp: DateTime.now().subtract(const Duration(minutes: 12)),
-      type: NotificationType.job,
-      isRead: false,
-    ),
-    NotificationItem(
-      id: '2',
-      title: 'Weekly Payout Processed',
-      body:
-          '₹4,250 has been credited to your verified bank account ending in **4921.',
-      timestamp: DateTime.now().subtract(const Duration(hours: 3)),
-      type: NotificationType.payment,
-      isRead: false,
-    ),
-    NotificationItem(
-      id: '3',
-      title: 'Profile Verification Complete',
-      body:
-          'Congratulations! Your technician KYC and background check have been approved.',
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      type: NotificationType.system,
-      isRead: true,
-    ),
-    NotificationItem(
-      id: '4',
-      title: 'High Demand Area Alert',
-      body:
-          'Demand for electrical & AC technicians is surging near your current sector.',
-      timestamp: DateTime.now().subtract(const Duration(days: 2)),
-      type: NotificationType.job,
-      isRead: true,
-    ),
-  ];
-
-  NotificationType? _selectedFilter;
-
-  void _markAllAsRead() {
-    setState(() {
-      for (var item in _notifications) {
-        item.isRead = true;
-      }
-    });
-  }
-
-  void _clearAll() {
-    setState(() {
-      _notifications.clear();
-    });
-  }
+  String? _selectedFilter; // null = 'all', 'job', 'payment', 'system'
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _selectedFilter == null
-        ? _notifications
-        : _notifications.where((n) => n.type == _selectedFilter).toList();
+    final notificationsAsync = ref.watch(notificationsProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAF8),
@@ -111,24 +39,27 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          if (_notifications.isNotEmpty)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: AppTheme.black),
-              onSelected: (val) {
-                if (val == 'read') _markAllAsRead();
-                if (val == 'clear') _clearAll();
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'read',
-                  child: Text('Mark all as read'),
-                ),
-                const PopupMenuItem(
-                  value: 'clear',
-                  child: Text('Clear all'),
-                ),
-              ],
-            ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: AppTheme.black),
+            onSelected: (val) {
+              if (val == 'read') {
+                ref.read(notificationsProvider.notifier).markAllAsRead();
+              }
+              if (val == 'refresh') {
+                ref.read(notificationsProvider.notifier).refresh();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'read',
+                child: Text('Mark all as read'),
+              ),
+              const PopupMenuItem(
+                value: 'refresh',
+                child: Text('Refresh'),
+              ),
+            ],
+          ),
         ],
       ),
       body: Column(
@@ -137,59 +68,106 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           Container(
             color: AppTheme.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                _buildFilterChip('All', null),
-                const SizedBox(width: 8),
-                _buildFilterChip('Jobs', NotificationType.job),
-                const SizedBox(width: 8),
-                _buildFilterChip('Payments', NotificationType.payment),
-                const SizedBox(width: 8),
-                _buildFilterChip('System', NotificationType.system),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip('All', null),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Jobs', 'job'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Payouts', 'payment'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('System', 'system'),
+                ],
+              ),
             ),
           ),
           const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
 
           Expanded(
-            child: filtered.isEmpty
-                ? const Center(
-                    child: EmptyState(
-                      icon: Icons.notifications_off_outlined,
-                      title: "No Notifications",
-                      subtitle: "You're all caught up! New alerts will appear here.",
+            child: notificationsAsync.when(
+              loading: () => const ListShimmer(),
+              error: (err, _) => Center(
+                child: EmptyState(
+                  icon: Icons.notifications_off_outlined,
+                  title: "Unable to load notifications",
+                  subtitle: "Check your connection and try again.",
+                  onRetry: () =>
+                      ref.read(notificationsProvider.notifier).refresh(),
+                ),
+              ),
+              data: (items) {
+                final filtered = _selectedFilter == null
+                    ? items
+                    : items.where((n) {
+                        if (_selectedFilter == 'payment') {
+                          return n.type.contains('pay') ||
+                              n.type.contains('withdraw');
+                        }
+                        return n.type.contains(_selectedFilter!);
+                      }).toList();
+
+                if (filtered.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: () =>
+                        ref.read(notificationsProvider.notifier).refresh(),
+                    child: ListView(
+                      children: const [
+                        SizedBox(height: 120),
+                        Center(
+                          child: EmptyState(
+                            icon: Icons.notifications_off_outlined,
+                            title: "No Notifications",
+                            subtitle:
+                                "You're all caught up! New alerts will appear here.",
+                          ),
+                        ),
+                      ],
                     ),
-                  )
-                : ListView.separated(
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () =>
+                      ref.read(notificationsProvider.notifier).refresh(),
+                  child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: filtered.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final item = filtered[index];
-                      return _buildNotificationCard(item);
+                      return InkWell(
+                        onTap: () {
+                          if (!item.isRead) {
+                            ref
+                                .read(notificationsProvider.notifier)
+                                .markAsRead(item.id);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: _buildNotificationCard(item),
+                      );
                     },
                   ),
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, NotificationType? type) {
+  Widget _buildFilterChip(String label, String? type) {
     final isSelected = _selectedFilter == type;
     return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedFilter = type;
-        });
-      },
+      onTap: () => setState(() => _selectedFilter = type),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.primaryColor
-              : const Color(0xFFF1F5F2),
+          color: isSelected ? AppTheme.primaryColor : const Color(0xFFF1F5F2),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -204,27 +182,23 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationCard(NotificationItem item) {
-    IconData icon;
-    Color iconColor;
-    Color iconBg;
+  Widget _buildNotificationCard(AppNotification item) {
+    IconData icon = Icons.notifications_outlined;
+    Color iconColor = AppTheme.primaryColor;
+    Color iconBg = const Color(0xFFE8F5E9);
 
-    switch (item.type) {
-      case NotificationType.job:
-        icon = Icons.work_outline_rounded;
-        iconColor = AppTheme.primaryColor;
-        iconBg = const Color(0xFFE8F5E9);
-        break;
-      case NotificationType.payment:
-        icon = Icons.account_balance_wallet_outlined;
-        iconColor = const Color(0xFFEF6C00);
-        iconBg = const Color(0xFFFFF3E0);
-        break;
-      case NotificationType.system:
-        icon = Icons.verified_user_outlined;
-        iconColor = const Color(0xFF1976D2);
-        iconBg = const Color(0xFFE3F2FD);
-        break;
+    if (item.type.contains('pay') || item.type.contains('withdraw')) {
+      icon = Icons.account_balance_wallet_outlined;
+      iconColor = const Color(0xFFEF6C00);
+      iconBg = const Color(0xFFFFF3E0);
+    } else if (item.type.contains('job') || item.type.contains('booking')) {
+      icon = Icons.work_outline_rounded;
+      iconColor = AppTheme.primaryColor;
+      iconBg = const Color(0xFFE8F5E9);
+    } else {
+      icon = Icons.verified_user_outlined;
+      iconColor = const Color(0xFF1976D2);
+      iconBg = const Color(0xFFE3F2FD);
     }
 
     return Container(
@@ -291,7 +265,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  item.body,
+                  item.message,
                   style: TextStyle(
                     fontSize: 13,
                     color: AppTheme.grey[700],
@@ -300,7 +274,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _formatTimestamp(item.timestamp),
+                  _formatTimestamp(item.createdAt),
                   style: TextStyle(
                     fontSize: 11.5,
                     color: AppTheme.grey[500],
@@ -318,7 +292,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   String _formatTimestamp(DateTime dt) {
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} mins ago';
+      return '${diff.inMinutes < 1 ? 1 : diff.inMinutes} mins ago';
     } else if (diff.inHours < 24) {
       return '${diff.inHours} hours ago';
     } else {
@@ -326,4 +300,3 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 }
-

@@ -8,8 +8,10 @@ import 'package:right_touch/screens/job_map_screen.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/utils/error_handler.dart';
 import 'package:right_touch/widgets/rt_loader.dart';
+import 'package:right_touch/widgets/service_detail/arrival_assistance_sheet.dart';
+import 'package:right_touch/widgets/service_detail/before_after_slider.dart';
+import 'package:right_touch/widgets/service_detail/cancel_job_dialog.dart';
 import 'package:right_touch/widgets/service_detail/job_completion_otp_sheet.dart';
-import 'package:right_touch/widgets/service_detail/service_image_picker_slot.dart';
 import 'package:right_touch/widgets/service_detail/service_instructions_card.dart';
 
 /// A modular, reusable Service Detail Screen widget for a technician workflow.
@@ -120,6 +122,7 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
 
     if (verified == true && mounted) {
       ref.invalidate(currentJobsProvider);
+      ref.invalidate(scheduledJobsProvider);
       ref.invalidate(historyJobsProvider);
       ref.invalidate(dashboardDataProvider);
 
@@ -140,6 +143,13 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
     }
   }
 
+  Future<void> _handleCancelJob() async {
+    final cancelled = await CancelJobDialog.show(context, widget.task.jobId);
+    if (cancelled == true && mounted) {
+      Navigator.pop(context, true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -152,25 +162,31 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
         children: [
           _buildHeader(textTheme),
           const SizedBox(height: 12),
-          _buildNavigationButton(),
-          const SizedBox(height: 24),
-          ServiceImagePickerSlot(
-            label: "Before Photo (Mandatory)",
-            imagePath: _beforeImagePath,
-            onImagePicked: (p) => setState(() => _beforeImagePath = p),
+          _buildActionButtonsRow(),
+          const SizedBox(height: 20),
+
+          // 1. Interactive Proof of Work Split Comparison
+          BeforeAfterSliderWidget(
+            beforeImagePath: _beforeImagePath,
+            afterImagePath: _afterImagePath,
+            onBeforeChanged: (p) => setState(() => _beforeImagePath = p),
+            onAfterChanged: (p) => setState(() => _afterImagePath = p),
           ),
           const SizedBox(height: 24),
+
+          // 2. Instructions Card
           ServiceInstructionsCard(task: widget.task),
           const SizedBox(height: 16),
+
+          // 3. Completion Checklist
           _buildChecklist(textTheme),
-          const SizedBox(height: 24),
-          ServiceImagePickerSlot(
-            label: "After Photo (Mandatory)",
-            imagePath: _afterImagePath,
-            onImagePicked: (p) => setState(() => _afterImagePath = p),
-          ),
           const SizedBox(height: 32),
+
+          // 4. Completion & Cancellation Controls
           _buildSubmitButton(),
+          const SizedBox(height: 12),
+          _buildCancelButton(),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -317,30 +333,86 @@ class _ServiceDetailViewState extends ConsumerState<ServiceDetailView> {
     );
   }
 
-  Widget _buildNavigationButton() {
-    return OutlinedButton.icon(
-      onPressed: () {
-        final double lat = widget.task.latitude ?? 13.0827;
-        final double lng = widget.task.longitude ?? 80.2707;
+  Widget _buildCancelButton() {
+    return TextButton.icon(
+      onPressed: _isSubmitting ? null : _handleCancelJob,
+      icon: const Icon(Icons.cancel_outlined, size: 18, color: AppTheme.error),
+      label: const Text(
+        "Cancel Assigned Job",
+        style: TextStyle(
+          color: AppTheme.error,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+    );
+  }
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => JobMapScreen(
-              latitude: lat,
-              longitude: lng,
-              title: "Directions to ${widget.task.location}",
+  Widget _buildActionButtonsRow() {
+    return Row(
+      children: [
+        // Navigation Button
+        Expanded(
+          flex: 3,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              final double lat = widget.task.latitude ?? 13.0827;
+              final double lng = widget.task.longitude ?? 80.2707;
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => JobMapScreen(
+                    latitude: lat,
+                    longitude: lng,
+                    title: "Directions to ${widget.task.location}",
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.directions_rounded, size: 18),
+            label: const Text("Navigate"),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              foregroundColor: AppTheme.primaryColor,
+              side: const BorderSide(color: AppTheme.primaryColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
-        );
-      },
-      icon: const Icon(Icons.directions),
-      label: const Text("Get Directions"),
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        side: const BorderSide(color: AppTheme.primaryColor),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+        ),
+        const SizedBox(width: 10),
+
+        // Arrival Assistance / Contact Button
+        Expanded(
+          flex: 4,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              ArrivalAssistanceSheet.show(
+                context,
+                customerName: widget.task.customerId ?? "Customer",
+                location: widget.task.location,
+              );
+            },
+            icon: const Icon(Icons.support_agent_rounded, size: 18),
+            label: const Text("Arrival Help"),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              backgroundColor: const Color(0xFFE8F5E9),
+              foregroundColor: AppTheme.primaryColor,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0xFFC8E6C9)),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

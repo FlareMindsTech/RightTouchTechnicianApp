@@ -199,15 +199,26 @@ abstract class UserModel with _$UserModel {
   }
 
   double get avgRating {
-    final r = rawData?['rating'] ?? rawData?['averageRating'];
+    if (rating != null && rating! > 0) return rating!;
+    if (averageRating != null && averageRating! > 0) return averageRating!;
+    final r = rawData?['rating'] ?? rawData?['averageRating'] ?? rawData?['avgRating'];
     if (r is num) return r.toDouble();
-    if (r is Map) return (r['avg'] as num?)?.toDouble() ?? 0.0;
+    if (r is Map) {
+      final val = r['avg'] ?? r['average'] ?? r['rating'] ?? r['score'] ?? r['value'];
+      if (val is num) return val.toDouble();
+      if (val is String) return double.tryParse(val) ?? 0.0;
+    }
+    if (r is String) return double.tryParse(r) ?? 0.0;
     return 0.0;
   }
 
   int get ratingCount {
-    final r = rawData?['rating'] ?? rawData?['averageRating'];
-    if (r is Map) return (r['count'] as num?)?.toInt() ?? 0;
+    final r = rawData?['rating'] ?? rawData?['averageRating'] ?? rawData?['avgRating'];
+    if (r is Map) {
+      final cnt = r['count'] ?? r['totalReviews'] ?? r['numReviews'];
+      if (cnt is num) return cnt.toInt();
+      if (cnt is String) return int.tryParse(cnt) ?? 0;
+    }
     return 0;
   }
 

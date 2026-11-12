@@ -41,6 +41,7 @@ class _KycDocumentsScreenState extends ConsumerState<KycDocumentsScreen>
   String? _dlPath;
 
   final ImagePicker _picker = ImagePicker();
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -50,17 +51,27 @@ class _KycDocumentsScreenState extends ConsumerState<KycDocumentsScreen>
       _prefillFields();
 
       for (final c in [_aadharController, _panController, _dlController]) {
-        c.addListener(_autoSave);
+        c.addListener(_scheduleAutoSave);
       }
     });
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _aadharController.dispose();
     _panController.dispose();
     _dlController.dispose();
     super.dispose();
+  }
+
+  void _scheduleAutoSave() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+      if (mounted) {
+        _autoSave();
+      }
+    });
   }
 
   void _loadProviderState() {
@@ -150,18 +161,25 @@ class _KycDocumentsScreenState extends ConsumerState<KycDocumentsScreen>
               user.kycVerified == true);
 
           if (wasLoading && isKycNowSubmitted) {
-            HapticFeedback.heavyImpact();
-            SuccessOverlay.show(
-              context,
-              message: 'Documents Submitted!',
-              subtitle: 'Proceeding to bank details...',
-              duration: const Duration(milliseconds: 1600),
-              onDone: () {
-                if (mounted) {
-                  widget.onNext?.call();
-                }
-              },
+            HapticFeedback.mediumImpact();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 8),
+                    Text('Documents submitted! Moving to bank details...'),
+                  ],
+                ),
+                backgroundColor: AppTheme.primaryColor,
+                duration: Duration(milliseconds: 1500),
+                behavior: SnackBarBehavior.floating,
+              ),
             );
+
+            if (mounted) {
+              widget.onNext?.call();
+            }
           }
 
           if (wasLoading || previous != next) {
@@ -350,7 +368,7 @@ class _KycDocumentsScreenState extends ConsumerState<KycDocumentsScreen>
                 padding: const EdgeInsets.all(24.0),
                 child: Form(
                   key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  autovalidateMode: AutovalidateMode.disabled,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

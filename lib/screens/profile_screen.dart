@@ -17,6 +17,7 @@ import 'package:right_touch/screens/profile/view_bank_details_screen.dart';
 import 'package:right_touch/screens/profile/widgets/delete_account_dialog.dart';
 import 'package:right_touch/screens/profile/widgets/logout_dialog.dart';
 import 'package:right_touch/screens/profile/widgets/profile_image_picker_sheet.dart';
+import 'package:right_touch/providers/notification_provider.dart';
 import 'package:right_touch/screens/profile/widgets/profile_menu_item.dart';
 import 'package:right_touch/services/location_tracking_service.dart';
 import 'package:right_touch/utils/app_theme.dart';
@@ -236,19 +237,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     authState.maybeWhen(
       authenticated: (userData) {
         userName = userData.fullDisplayName;
+        bool isHexId(String? s) =>
+            s != null && RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(s.trim());
+
         if (userData.skills != null && userData.skills!.isNotEmpty) {
-          userRole = userData.skills!.first;
-        } else if (userData.role != null && userData.role!.isNotEmpty) {
+          final firstSkill = userData.skills!.first;
+          userRole =
+              isHexId(firstSkill) ? "Certified Service Partner" : firstSkill;
+        } else if (userData.role != null &&
+            userData.role!.isNotEmpty &&
+            !isHexId(userData.role)) {
           userRole = userData.role!;
+        } else {
+          userRole = "Certified Service Partner";
         }
         profileImageUrl = userData.profileImage ??
             userData.profile?['profileImage']?.toString() ??
             userData.rawData?['profileImage']?.toString();
-        rating = userData.rating ?? userData.averageRating;
+        final userRating = userData.rating ??
+            userData.averageRating ??
+            (userData.avgRating > 0 ? userData.avgRating : null);
+        rating = userRating;
         isVerified = userData.kycVerified == true || userData.isVerified == true;
       },
       orElse: () {},
     );
+
+    final unreadNotificationCount =
+        ref.watch(unreadNotificationCountProvider).value ?? 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8F6),
@@ -266,7 +282,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     top: 18,
                     left: 20,
                     right: 20,
-                    bottom: 60,
+                    bottom: 95,
                   ),
                   decoration: const BoxDecoration(
                     color: AppTheme.primaryColor,
@@ -583,16 +599,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Text(
-                                rating != null && rating! > 0
-                                    ? rating!.toStringAsFixed(1)
-                                    : "--",
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.black,
+                              if (rating != null && rating! > 0)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  textBaseline: TextBaseline.alphabetic,
+                                  children: [
+                                    Text(
+                                      rating!.toStringAsFixed(1),
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.black,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.star_rounded,
+                                      size: 16,
+                                      color: Color(0xFFF57C00),
+                                    ),
+                                  ],
+                                )
+                              else
+                                const Text(
+                                  "--",
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.black,
+                                  ),
                                 ),
-                              ),
                               const SizedBox(height: 2),
                               Text(
                                 "Rating",
@@ -711,6 +747,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           iconBgColor: const Color(0xFFE3F2FD),
                           title: "Notifications",
                           subtitle: "Alerts, broadcasts & updates",
+                          badgeText: unreadNotificationCount > 0
+                              ? '$unreadNotificationCount'
+                              : null,
                           onTap: () {
                             Navigator.push(
                               context,

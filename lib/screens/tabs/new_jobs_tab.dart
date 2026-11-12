@@ -26,6 +26,7 @@ class NewJobsTab extends ConsumerStatefulWidget {
 
 class _NewJobsTabState extends ConsumerState<NewJobsTab> {
   Timer? _refreshTimer;
+  bool _isManualRefreshing = false;
 
   @override
   void initState() {
@@ -34,8 +35,8 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
   }
 
   void _startAutoRefresh() {
-    // Auto refresh every 30 seconds
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    // Auto refresh every 25 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 25), (timer) {
       if (mounted) {
         _refreshJobs();
       }
@@ -49,7 +50,14 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
   }
 
   Future<void> _refreshJobs() async {
-    return ref.read(broadcastJobsProvider.notifier).refresh();
+    setState(() => _isManualRefreshing = true);
+    try {
+      await ref.read(broadcastJobsProvider.notifier).refresh();
+    } finally {
+      if (mounted) {
+        setState(() => _isManualRefreshing = false);
+      }
+    }
   }
 
   Future<void> _handleJobTap(Job job) async {
@@ -59,7 +67,6 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
     );
 
     if (result == true) {
-      // Refresh after job completion or acceptance
       unawaited(_refreshJobs());
     }
   }
@@ -68,6 +75,7 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final broadcastJobs = ref.watch(broadcastJobsProvider);
+    final socketState = ref.watch(socketStateProvider);
 
     ref.listen(socketStateProvider, (previous, next) {
       if (next.hasNewJob && !(previous?.hasNewJob ?? false)) {
@@ -79,189 +87,263 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
       }
     });
 
-    return RefreshIndicator(
-      onRefresh: _refreshJobs,
-      child: CustomScrollView(
-        physics: const ClampingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        slivers: [
-          SliverToBoxAdapter(
-            child: authState.maybeWhen(
-              authenticated: (user) {
-                if (!user.isProfileComplete || user.kycVerified != true) {
-                  return KycReminderBanner(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const HelpSupportScreen(),
-                        ),
-                      );
-                    },
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-              orElse: () => const SizedBox.shrink(),
-            ),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F8F6),
+      body: RefreshIndicator(
+        onRefresh: _refreshJobs,
+        color: AppTheme.primaryColor,
+        child: CustomScrollView(
+          physics: const ClampingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
           ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _StickyHeaderDelegate(
-              height: 140,
-              child: Container(
-                color: AppTheme.white,
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                      child: Row(
+          slivers: [
+            // KYC Reminder Banner if not complete
+            SliverToBoxAdapter(
+              child: authState.maybeWhen(
+                authenticated: (user) {
+                  if (!user.isProfileComplete || user.kycVerified != true) {
+                    return KycReminderBanner(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HelpSupportScreen(),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+                orElse: () => const SizedBox.shrink(),
+              ),
+            ),
+
+            // Clean Sticky Header
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StickyHeaderDelegate(
+                height: 120,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.shade200,
+                        width: 1,
+                      ),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Top Row: Title + Notification & Refresh
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            "Right Touch",
+                            "Available Jobs",
                             style: TextStyle(
                               fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.black,
-                              letterSpacing: 0.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF111827),
+                              letterSpacing: -0.3,
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              ref
-                                  .read(socketStateProvider.notifier)
-                                  .clearNewJobAlert();
-                              _refreshJobs();
-                            },
-                            child: Stack(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.grey.shade100,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                      Icons.notifications_outlined,
-                                      size: 24),
-                                ),
-                                if (ref.watch(socketStateProvider).hasNewJob)
-                                  Positioned(
-                                    right: 4,
-                                    top: 4,
-                                    child: Container(
-                                      width: 10,
-                                      height: 10,
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: _isManualRefreshing
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppTheme.primaryColor,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.refresh_rounded,
+                                        color: Color(0xFF4B5563),
+                                        size: 22,
+                                      ),
+                                onPressed: _isManualRefreshing
+                                    ? null
+                                    : () {
+                                        HapticFeedback.lightImpact();
+                                        _refreshJobs();
+                                      },
+                                tooltip: 'Refresh jobs',
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  ref
+                                      .read(socketStateProvider.notifier)
+                                      .clearNewJobAlert();
+                                  _refreshJobs();
+                                },
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
                                       decoration: const BoxDecoration(
-                                        color: AppTheme.orange,
+                                        color: Color(0xFFF3F4F6),
                                         shape: BoxShape.circle,
                                       ),
+                                      child: const Icon(
+                                        Icons.notifications_outlined,
+                                        size: 20,
+                                        color: Color(0xFF374151),
+                                      ),
                                     ),
+                                    if (socketState.hasNewJob)
+                                      Positioned(
+                                        right: 2,
+                                        top: 2,
+                                        child: Container(
+                                          width: 9,
+                                          height: 9,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFFF5722),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      // Bottom Row: Job count + Live Status Chip
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          broadcastJobs.when(
+                            data: (jobs) => Text(
+                              jobs.isEmpty
+                                  ? "0 New Requests"
+                                  : "${jobs.length} ${jobs.length == 1 ? 'New Request' : 'New Requests'}",
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w600,
+                                color: jobs.isEmpty
+                                    ? const Color(0xFF6B7280)
+                                    : AppTheme.primaryColor,
+                              ),
+                            ),
+                            loading: () => const Text(
+                              "Checking for requests...",
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            error: (_, __) => const SizedBox.shrink(),
+                          ),
+
+                          // Live Socket Status Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: socketState.isConnected
+                                  ? const Color(0xFFE8F5E9)
+                                  : const Color(0xFFFFF3E0),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: BoxDecoration(
+                                    color: socketState.isConnected
+                                        ? const Color(0xFF2E7D32)
+                                        : const Color(0xFFE65100),
+                                    shape: BoxShape.circle,
                                   ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  socketState.isConnected ? 'LIVE FEED' : 'CONNECTING',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                    color: socketState.isConnected
+                                        ? const Color(0xFF2E7D32)
+                                        : const Color(0xFFE65100),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: broadcastJobs.when(
-                        data: (jobs) => Text(
-                          "${jobs.length} ${jobs.length == 1 ? 'new job' : 'new jobs'}",
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        loading: () => const Text(
-                          "Loading jobs...",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        error: (error, stack) => const SizedBox.shrink(),
-                      ),
-                    ),
-                    if (ref.watch(socketStateProvider).isConnected)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppTheme.green,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Live Feed',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.green,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          broadcastJobs.when(
-            data: (jobs) {
-              if (jobs.isEmpty) {
-                return SliverToBoxAdapter(
-                  child: _buildEmptyPendingState(ref),
-                );
-              }
-              return SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final job = jobs[index];
-                  return FadeInSlide(
-                    index: index,
-                    child: JobCard(
-                      job: job,
-                      showCallButton: false,
-                      onTap: () => _handleJobTap(job),
-                    ),
+
+            // Job List or Clean Empty State
+            broadcastJobs.when(
+              data: (jobs) {
+                if (jobs.isEmpty) {
+                  return SliverToBoxAdapter(
+                    child: _buildEmptyPendingState(ref),
                   );
-                }, childCount: jobs.length),
-              );
-            },
-            loading: () => const SliverToBoxAdapter(
-              child: SizedBox(height: 500, child: ListShimmer()),
-            ),
-            error: (err, stack) => SliverFillRemaining(
-              hasScrollBody: false,
-              child: ErrorBoundary(
-                message: ErrorHandler.parseError(err),
-                onRetry: _refreshJobs,
-                showTitle: false,
-                isElevated: true,
-                onLoginAgain: () {
-                  ref.read(authProvider.notifier).logout();
-                },
+                }
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final job = jobs[index];
+                    return FadeInSlide(
+                      index: index,
+                      child: JobCard(
+                        job: job,
+                        showCallButton: false,
+                        onTap: () => _handleJobTap(job),
+                      ),
+                    );
+                  }, childCount: jobs.length),
+                );
+              },
+              loading: () => const SliverToBoxAdapter(
+                child: SizedBox(height: 400, child: ListShimmer()),
+              ),
+              error: (err, stack) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: ErrorBoundary(
+                  message: ErrorHandler.parseError(err),
+                  onRetry: _refreshJobs,
+                  showTitle: false,
+                  isElevated: true,
+                  onLoginAgain: () {
+                    ref.read(authProvider.notifier).logout();
+                  },
+                ),
               ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          ],
+        ),
       ),
     );
   }
@@ -270,13 +352,14 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
     final currentJobs = ref.watch(currentJobsProvider).asData?.value ?? [];
     final activeJob = currentJobs.isNotEmpty ? currentJobs.first : null;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Column(
-        children: [
-          if (activeJob != null) ...[
+    if (activeJob != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppTheme.white,
                 borderRadius: BorderRadius.circular(20),
@@ -287,7 +370,7 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                 boxShadow: [
                   BoxShadow(
                     color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                    blurRadius: 16,
+                    blurRadius: 18,
                     offset: const Offset(0, 6),
                   ),
                 ],
@@ -296,50 +379,63 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF69F0AE),
+                            width: 1,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.check_circle_rounded,
-                          color: Color(0xFF00A859),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
+                            Icon(
+                              Icons.fiber_manual_record,
+                              size: 10,
+                              color: Color(0xFF00A859),
+                            ),
+                            SizedBox(width: 5),
                             Text(
-                              "Job Accepted & Scheduled!",
+                              "JOB IS ONGOING",
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF007A3E),
-                              ),
-                            ),
-                            Text(
-                              "You have an active job in your schedule",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF5A655A),
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      if ((activeJob.earnings ?? activeJob.totalAmount) != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "₹${(activeJob.earnings ?? activeJob.totalAmount)?.toStringAsFixed(0)}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  const Divider(
-                      height: 24, thickness: 1, color: Color(0xFFEEEEEE)),
+                  const SizedBox(height: 14),
                   Text(
-                    activeJob.title.isNotEmpty ? activeJob.title : "Service Job",
+                    activeJob.serviceName ?? "Ongoing Service",
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.black,
                     ),
@@ -348,15 +444,13 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                   Row(
                     children: [
                       const Icon(Icons.location_on_outlined,
-                          size: 15, color: AppTheme.primaryColor),
+                          size: 16, color: AppTheme.grey),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          activeJob.location.isNotEmpty
-                              ? activeJob.location
-                              : "Customer Location",
+                          activeJob.location ?? "Customer Location",
                           style: TextStyle(
-                              fontSize: 13, color: AppTheme.grey[700]),
+                              fontSize: 13, color: AppTheme.grey[600]),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -364,11 +458,11 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                     ],
                   ),
                   if (activeJob.scheduledTime != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         const Icon(Icons.access_time_rounded,
-                            size: 15, color: Color(0xFFFFA000)),
+                            size: 16, color: Color(0xFFFFA000)),
                         const SizedBox(width: 4),
                         Text(
                           activeJob.scheduledTime!,
@@ -378,101 +472,142 @@ class _NewJobsTabState extends ConsumerState<NewJobsTab> {
                       ],
                     ),
                   ],
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ref.read(navProvider.notifier).state = 2;
-                      },
-                      icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                      label: const Text(
-                        "View in Schedule",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: AppTheme.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _handleJobTap(activeJob),
+                          icon: const Icon(Icons.touch_app_rounded, size: 18),
+                          label: const Text(
+                            "View Ongoing Job",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryColor,
+                            foregroundColor: AppTheme.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: 0,
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        elevation: 0,
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            ref.read(navProvider.notifier).state = 2; // Schedule tab
+                          },
+                          icon: const Icon(Icons.map_outlined, size: 17),
+                          label: const Text(
+                            "Schedule",
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primaryColor,
+                            side: const BorderSide(
+                                color: AppTheme.primaryColor, width: 1.2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
           ],
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-            decoration: BoxDecoration(
-              color: AppTheme.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE8E8E8)),
+        ),
+      );
+    }
+
+    // Clean, Premium Empty State (no radar sweep, no 15 km text)
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 36.0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 36.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 18,
+              offset: const Offset(0, 4),
             ),
-            child: Column(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFFE8F5E9),
-                    border: Border.all(
-                      color: const Color(0xFF69F0AE).withValues(alpha: 0.5),
-                      width: 2,
-                    ),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.radar_rounded,
-                      size: 38,
-                      color: Color(0xFF00A859),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Scanning for Nearby Jobs",
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.black,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  activeJob != null
-                      ? "Your active job is safe in Schedule. Keep this screen ready for additional requests."
-                      : "You're on duty! You'll receive instant sound & vibration alerts when a new job is broadcast near you.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppTheme.grey[600],
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                OutlinedButton.icon(
-                  onPressed: _refreshJobs,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text("Refresh Radar"),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.primaryColor,
-                    side: const BorderSide(color: AppTheme.primaryColor),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.assignment_outlined,
+                color: Color(0xFF059669),
+                size: 34,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            const Text(
+              "No New Job Requests",
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF111827),
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "You are active and on duty. New customer requests will appear here automatically.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B7280),
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  _refreshJobs();
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text(
+                  "Refresh Feed",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                  side: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

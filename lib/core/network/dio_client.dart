@@ -183,6 +183,20 @@ class DioClient {
     );
   }
 
+  Future<Response> patch(
+    String url, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    return await _dio.patch(
+      url,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+    );
+  }
+
   Future<Response> delete(
     String url, {
     dynamic data,

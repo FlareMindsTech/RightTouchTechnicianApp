@@ -33,19 +33,23 @@ class _RegistrationFlowScreenState
   }
 
   void _goToNextPage() {
-    if (_pageController.page != null && _pageController.page! < 2) {
+    if (_pageController.hasClients &&
+        _pageController.page != null &&
+        _pageController.page! < 2) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOutCubic,
       );
     }
   }
 
   void _goToPreviousPage() {
-    if (_pageController.page != null && _pageController.page! > 0) {
+    if (_pageController.hasClients &&
+        _pageController.page != null &&
+        _pageController.page! > 0) {
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOutCubic,
       );
     }
   }

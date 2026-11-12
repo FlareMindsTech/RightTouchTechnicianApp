@@ -19,6 +19,8 @@ class MapThemeNotifier extends Notifier<AppMapTheme> {
           savedIndex >= 0 &&
           savedIndex < MapThemeType.values.length) {
         state = AppMapTheme.getTheme(MapThemeType.values[savedIndex]);
+      } else {
+        state = AppMapTheme.getTheme(MapThemeType.buildings);
       }
     } catch (_) {}
   }

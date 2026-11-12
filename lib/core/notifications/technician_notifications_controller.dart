@@ -6,6 +6,8 @@ import 'package:right_touch/main.dart';
 import 'package:right_touch/providers/auth_provider.dart';
 import 'package:right_touch/providers/dashboard_provider.dart';
 import 'package:right_touch/providers/job_provider.dart';
+import 'package:right_touch/providers/notification_provider.dart';
+import 'package:right_touch/providers/wallet_provider.dart';
 import 'package:right_touch/data/models/job.dart';
 
 import 'package:right_touch/core/routing/app_router.dart';
@@ -96,12 +98,16 @@ final technicianNotificationsProvider =
       final utr = data['utr'] ?? data['reference'] ?? 'N/A';
       GlobalScaffold.showSnackBar('💸 Payout processed: ₹$rupees (UTR: $utr)');
       ref.invalidate(dashboardDataProvider);
+      ref.invalidate(walletProvider);
+      ref.invalidate(notificationsProvider);
     },
     onWithdrawalFailed: (data) {
       debugPrint('[TechnicianNotifications] onWithdrawalFailed: $data');
       final reason = data['reason'] ?? data['message'] ?? 'Withdrawal failed';
       GlobalScaffold.showSnackBar('⚠️ $reason', isError: true);
       ref.invalidate(dashboardDataProvider);
+      ref.invalidate(walletProvider);
+      ref.invalidate(notificationsProvider);
     },
     onPermissionChanged: (data) {
       debugPrint('[TechnicianNotifications] onPermissionChanged: $data');
@@ -136,6 +142,7 @@ final technicianNotificationsProvider =
     onNotificationNew: (data) {
       debugPrint('[TechnicianNotifications] onNotificationNew: $data');
       ref.invalidate(dashboardDataProvider);
+      ref.invalidate(notificationsProvider);
     },
   );
 

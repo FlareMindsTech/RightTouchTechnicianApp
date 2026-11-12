@@ -22,6 +22,7 @@ import 'package:right_touch/widgets/custom_bottom_nav_bar.dart';
 import 'package:right_touch/providers/nav_provider.dart';
 import 'package:right_touch/widgets/network_status_banner.dart';
 import 'package:right_touch/widgets/tab_navigator.dart';
+import 'package:right_touch/widgets/broadcast_alert_overlay.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -236,24 +237,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         },
         child: Scaffold(
           extendBody: true,
-          body: SafeArea(
-            child: Column(
-              children: [
-                const NetworkStatusBanner(),
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const ClampingScrollPhysics(),
-                    onPageChanged: (index) {
-                      if (ref.read(navProvider) != index) {
-                        ref.read(navProvider.notifier).state = index;
-                      }
-                    },
-                    children: tabs,
-                  ),
+          body: Stack(
+            children: [
+              SafeArea(
+                child: Column(
+                  children: [
+                    const NetworkStatusBanner(),
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const ClampingScrollPhysics(),
+                        onPageChanged: (index) {
+                          if (ref.read(navProvider) != index) {
+                            ref.read(navProvider.notifier).state = index;
+                          }
+                        },
+                        children: tabs,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const BroadcastAlertOverlay(),
+            ],
           ),
           bottomNavigationBar: CustomBottomNavBar(
             currentIndex: navIndex,

@@ -33,22 +33,50 @@ class ApiConfig {
   static const String myBroadcastJobsEndpoint =
       '/api/technician/job-broadcast/my-jobs';
   static const String currentJobsEndpoint = '/api/technician/jobs/current';
+  static const String acceptedScheduledJobsEndpoint =
+      '/api/technician/jobs/accepted/scheduled';
   static const String jobHistoryEndpoint = '/api/technician/jobs/history';
+  static const String walletEndpoint = '/api/technician/wallet';
+  static const String walletTransactionsEndpoint =
+      '/api/technician/wallet/transactions';
   static const String walletHistoryEndpoint =
       '/api/technician/wallet/withdrawalhistory';
   static const String withdrawFundEndpoint =
       '/api/technician/wallet/withdrawal';
+  static const String payoutSettingsEndpoint =
+      '/api/technician/wallet/payout-settings';
+  static const String financeEarningsEndpoint =
+      '/api/technician/finance/earnings';
+  static const String technicianNotificationsEndpoint =
+      '/api/technician/notifications';
+  static const String technicianNotificationUnreadCountEndpoint =
+      '/api/technician/notifications/unread-count';
   static const String updateTechnicianEndpoint =
       '/api/technician/updateTechnician';
   static const String completeProfileEndpoint = '/api/user/complete-profile';
   static const String technicianDataEndpoint = '/api/technician/technicianData';
   static const String bankDetailsEndpoint = '/api/technician/technician/banks';
 
+  static String cancelWithdrawalEndpoint(String id) =>
+      '/api/technician/wallet/withdrawal/$id/cancel';
+
+  static String withdrawalReceiptEndpoint(String id) =>
+      '/api/technician/wallet/withdrawal/$id/receipt';
+
+  static String markTechnicianNotificationReadEndpoint(String id) =>
+      '/api/technician/notifications/$id/read';
+
   static String workImagesEndpoint(String bookingId) =>
       '/api/technician/jobs/$bookingId/work-images';
 
   static String respondJobBroadcastEndpoint(String bookingId) =>
       '/api/technician/job-broadcast/respond/$bookingId';
+
+  static String cancelJobByTechnicianEndpoint(String bookingId) =>
+      '/api/technician/booking/technician/cancel/$bookingId';
+
+  static String reacceptJobEndpoint(String bookingId) =>
+      '/api/technician/booking/reaccept/$bookingId';
 
   static String sendCompletionOtpEndpoint(String bookingId) =>
       '/api/technician/booking/$bookingId/completion-otp';
@@ -77,6 +105,8 @@ class ApiConfig {
   static String get nearbyJobsUrl => '$baseUrl$nearbyJobsEndpoint';
   static String get broadcastJobsUrl => '$baseUrl$myBroadcastJobsEndpoint';
   static String get currentJobsUrl => '$baseUrl$currentJobsEndpoint';
+  static String get acceptedScheduledJobsUrl =>
+      '$baseUrl$acceptedScheduledJobsEndpoint';
   static String get jobHistoryUrl => '$baseUrl$jobHistoryEndpoint';
   static String get walletHistoryUrl => '$baseUrl$walletHistoryEndpoint';
 

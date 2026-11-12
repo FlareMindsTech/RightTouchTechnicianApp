@@ -99,7 +99,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
     if (state.state.isNotEmpty) _stateController.text = state.state;
     if (state.pincode.isNotEmpty) _pincodeController.text = state.pincode;
     if (state.locality.isNotEmpty) _localityController.text = state.locality;
-    if (state.exp.isNotEmpty) _expController.text = state.exp;
+    if (state.exp.isNotEmpty && state.exp != '0') {
+      _expController.text = state.exp;
+    }
     if (state.specialization.isNotEmpty) {
       _specializationController.text = state.specialization;
     }
@@ -210,25 +212,28 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen>
       next.maybeWhen(
         authenticated: (user) {
           if (wasLoading && user.isProfileComplete) {
-            HapticFeedback.heavyImpact();
+            HapticFeedback.mediumImpact();
             final VoidCallback? callback = !user.areKycDocumentsSubmitted ||
                     !user.hasBankDetails
                 ? widget.onNext
                 : widget.onComplete;
 
-            SuccessOverlay.show(
-              context,
-              message: 'Profile Complete!',
-              subtitle: !user.areKycDocumentsSubmitted
-                  ? 'Proceeding to verification...'
-                  : (!user.hasBankDetails
-                      ? 'Proceeding to bank details...'
-                      : null),
-              duration: const Duration(milliseconds: 1400),
-              onDone: () {
-                if (mounted) callback?.call();
-              },
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 8),
+                    Text('Profile saved! Moving to verification...'),
+                  ],
+                ),
+                backgroundColor: AppTheme.primaryColor,
+                duration: Duration(milliseconds: 1500),
+                behavior: SnackBarBehavior.floating,
+              ),
             );
+
+            if (mounted) callback?.call();
           }
         },
         error: (message) {

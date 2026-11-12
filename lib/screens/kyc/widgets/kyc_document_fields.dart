@@ -46,7 +46,6 @@ class KycDocumentFields extends StatelessWidget {
           keyboardType: TextInputType.number,
           maxLength: 14,
           inputFormatters: [
-            Validators.digitsOnlyFormatter,
             AadharInputFormatter(),
           ],
           validator: Validators.validateAadhaar,

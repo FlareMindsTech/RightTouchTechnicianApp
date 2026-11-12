@@ -49,20 +49,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
       duration: const Duration(milliseconds: 600),
     );
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: Curves.easeOutCubic,
       ),
     );
     _animationController.forward();
-
-    // Auto focus first box after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _focusNodes[0].requestFocus();
-      }
-    });
   }
 
   void _startTimer() {
@@ -154,11 +147,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
   Future<void> _resendCode(String identifier) async {
     if (!_canResend) return;
 
-    // Clear existing boxes
     for (var controller in _controllers) {
       controller.clear();
     }
-    _focusNodes[0].requestFocus();
 
     if (mounted) setState(() => _isLoading = true);
     try {
@@ -211,13 +202,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
 
     if (digits.length >= 4) {
       if (mounted) {
-        FocusScope.of(context).unfocus();
         HapticFeedback.mediumImpact();
         _handleVerify(widget.identifier ?? "");
       }
-    } else if (digits.isNotEmpty) {
-      final nextIndex = digits.length < 4 ? digits.length : 3;
-      _focusNodes[nextIndex].requestFocus();
     }
   }
 
@@ -236,40 +223,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
   }
 
   void _onChanged(String value, int index) {
-    // Handle multi-character paste
-    if (value.length > 1) {
-      final digits = Validators.normalizeDigitsOnly(value);
-      for (int i = 0; i < 4 && i < digits.length; i++) {
-        _controllers[i].text = digits[i];
-      }
-      if (digits.length >= 4) {
-        _focusNodes[3].unfocus();
-        HapticFeedback.mediumImpact();
-        _handleVerify(widget.identifier ?? "");
-      } else if (digits.isNotEmpty) {
-        final nextIndex = digits.length < 4 ? digits.length : 3;
-        _focusNodes[nextIndex].requestFocus();
-      }
-      return;
-    }
-
-    if (value.isNotEmpty) {
-      HapticFeedback.selectionClick();
-      if (index < 3) {
-        FocusScope.of(context).requestFocus(_focusNodes[index + 1]);
-      } else {
-        FocusScope.of(context).unfocus();
-        // Auto submit if all 4 are filled
-        final fullCode = _controllers.map((c) => c.text).join();
-        if (fullCode.length == 4) {
-          HapticFeedback.mediumImpact();
-          _handleVerify(widget.identifier ?? "");
-        }
-      }
-    } else {
-      if (index > 0) {
-        FocusScope.of(context).requestFocus(_focusNodes[index - 1]);
-      }
+    HapticFeedback.selectionClick();
+    if (value.length == 4) {
+      HapticFeedback.mediumImpact();
+      _handleVerify(widget.identifier ?? "");
     }
   }
 
@@ -288,75 +245,156 @@ class _OtpScreenState extends ConsumerState<OtpScreen>
     final identifier = widget.identifier ?? "";
 
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        leading: const BackButton(color: AppTheme.textPrimary),
-        backgroundColor: AppTheme.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: AppTheme.textPrimary, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          "Verification",
+          "Verification Code",
           style: TextStyle(
             color: AppTheme.textPrimary,
             fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
         ),
         centerTitle: true,
       ),
-      body: SlideTransition(
-        position: _slideAnimation,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              OtpHeaderSection(
-                identifier: identifier,
-                onEditPhone: () => Navigator.of(context).pop(),
-              ),
-              const SizedBox(height: 40),
-              OtpPinInputRow(
-                controllers: _controllers,
-                focusNodes: _focusNodes,
-                onChanged: _onChanged,
-                onOtpPasted: _fillOtp,
-              ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : () => _handleVerify(identifier),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: AppTheme.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+      body: SafeArea(
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
+            child: Column(
+              children: [
+                // Top Trust Badge
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    elevation: 0,
-                  ),
-                  child: isLoading
-                      ? const RtLoader.button(color: AppTheme.white)
-                      : const Text(
-                          "Verify & Proceed",
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.verified_user_rounded,
+                          size: 16,
+                          color: AppTheme.primaryColor,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          "SECURE OTP VERIFICATION",
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                            letterSpacing: 0.5,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              OtpResendFooter(
-                isLoading: isLoading,
-                canResend: _canResend,
-                secondsRemaining: _secondsRemaining,
-                onResend: () => _resendCode(identifier),
-              ),
-            ],
+                const SizedBox(height: 24),
+
+                OtpHeaderSection(
+                  identifier: identifier,
+                  onEditPhone: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(height: 36),
+
+                // Sleek PIN Input Card
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(color: AppTheme.grey.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      OtpPinInputRow(
+                        controllers: _controllers,
+                        focusNodes: _focusNodes,
+                        onChanged: _onChanged,
+                        onOtpPasted: _fillOtp,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Enter the 4-digit verification code sent to your phone",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Primary Verify Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed:
+                        isLoading ? null : () => _handleVerify(identifier),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: AppTheme.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: isLoading
+                        ? const RtLoader.button(color: AppTheme.white)
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "VERIFY & CONTINUE",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(Icons.arrow_forward_rounded, size: 18),
+                            ],
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 28),
+
+                OtpResendFooter(
+                  isLoading: isLoading,
+                  canResend: _canResend,
+                  secondsRemaining: _secondsRemaining,
+                  onResend: () => _resendCode(identifier),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:right_touch/data/models/wallet_transaction.dart';
 import 'package:right_touch/providers/wallet_provider.dart';
+import 'package:right_touch/screens/profile/widgets/payout_settings_sheet.dart';
 import 'package:right_touch/screens/profile/widgets/wallet_balance_card.dart';
 import 'package:right_touch/screens/profile/widgets/wallet_transaction_tile.dart';
 import 'package:right_touch/screens/profile/widgets/withdraw_bottom_sheet.dart';
@@ -88,6 +89,13 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
         backgroundColor: AppTheme.white,
         elevation: 0,
         foregroundColor: AppTheme.black,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune_rounded),
+            tooltip: "Payout Preferences",
+            onPressed: () => PayoutSettingsSheet.show(context),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppTheme.primaryColor,

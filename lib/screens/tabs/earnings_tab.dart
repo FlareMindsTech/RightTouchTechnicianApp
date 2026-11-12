@@ -8,9 +8,11 @@ import 'package:right_touch/providers/wallet_provider.dart';
 import 'package:right_touch/screens/profile/widgets/withdraw_bottom_sheet.dart';
 import 'package:right_touch/screens/profile/widgets/wallet_transaction_tile.dart';
 import 'package:right_touch/screens/profile/widgets/withdrawal_request_tile.dart';
+import 'package:right_touch/screens/tabs/widgets/daily_goal_card.dart';
 import 'package:right_touch/screens/tabs/widgets/earnings_stat_card.dart';
 import 'package:right_touch/screens/tabs/widgets/sliver_app_bar_delegate.dart';
 import 'package:right_touch/screens/tabs/widgets/sticky_earnings_header_delegate.dart';
+import 'package:right_touch/screens/tabs/widgets/weekly_earnings_chart.dart';
 import 'package:right_touch/services/security_service.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/utils/error_handler.dart';
@@ -121,7 +123,11 @@ class _EarningsTabState extends ConsumerState<EarningsTab>
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+                    DailyGoalCard(
+                      todayEarnings: walletData?.totalEarnings ?? Money.zero,
+                    ),
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
@@ -144,7 +150,9 @@ class _EarningsTabState extends ConsumerState<EarningsTab>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 14),
+                    const WeeklyEarningsChart(),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),

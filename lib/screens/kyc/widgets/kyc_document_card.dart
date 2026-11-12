@@ -85,7 +85,7 @@ class KycDocumentCard extends StatelessWidget {
               textCapitalization: textCapitalization,
               keyboardType: keyboardType,
               textInputAction: TextInputAction.next,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+              autovalidateMode: AutovalidateMode.disabled,
               maxLength: maxLength,
               inputFormatters: inputFormatters,
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
@@ -245,17 +245,22 @@ class KycDocumentCard extends StatelessWidget {
   }
 }
 
-/// Auto-formats Aadhar input as XXXX XXXX XXXX
+/// Auto-formats Aadhar input as XXXX XXXX XXXX with precise cursor tracking
 class AadharInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    final digits = newValue.text.replaceAll(' ', '');
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     if (digits.length > 12) {
       return oldValue;
     }
+
+    final cursorEnd = newValue.selection.end.clamp(0, newValue.text.length);
+    final textBeforeCursor = newValue.text.substring(0, cursorEnd);
+    final digitsBeforeCursor =
+        textBeforeCursor.replaceAll(RegExp(r'\D'), '').length;
 
     final buffer = StringBuffer();
     for (int i = 0; i < digits.length; i++) {
@@ -263,9 +268,29 @@ class AadharInputFormatter extends TextInputFormatter {
       buffer.write(digits[i]);
     }
     final formatted = buffer.toString();
+
+    final isDeleting = newValue.text.length < oldValue.text.length;
+    int targetOffset;
+
+    if (digitsBeforeCursor <= 4) {
+      targetOffset = digitsBeforeCursor;
+      if (digitsBeforeCursor == 4 && !isDeleting && formatted.length > 4) {
+        targetOffset = 5;
+      }
+    } else if (digitsBeforeCursor <= 8) {
+      targetOffset = digitsBeforeCursor + 1;
+      if (digitsBeforeCursor == 8 && !isDeleting && formatted.length > 9) {
+        targetOffset = 10;
+      }
+    } else {
+      targetOffset = digitsBeforeCursor + 2;
+    }
+
+    targetOffset = targetOffset.clamp(0, formatted.length);
+
     return newValue.copyWith(
       text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      selection: TextSelection.collapsed(offset: targetOffset),
     );
   }
 }

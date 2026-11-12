@@ -182,6 +182,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             validator: (v) => Validators.validateName(
                               v,
                               fieldName: 'Last Name',
+                              minLength: 1,
                             ),
                           ),
                         ),

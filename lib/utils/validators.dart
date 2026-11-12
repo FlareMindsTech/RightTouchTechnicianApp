@@ -365,7 +365,7 @@ class Validators {
     }
 
     final requested = Money.fromRupees(parsed);
-    final min = minAmount ?? Money.fromRupees(100);
+    final min = minAmount ?? Money.fromRupees(1);
     if (requested < min) {
       return 'Minimum withdrawal amount is ${min.formatted}';
     }

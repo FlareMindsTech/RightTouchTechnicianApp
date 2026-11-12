@@ -47,15 +47,19 @@ abstract class WithdrawalRequest with _$WithdrawalRequest {
   }) = _WithdrawalRequest;
 
   factory WithdrawalRequest.fromJson(Map<String, dynamic> json) {
+    final amountVal = json['amountPaise'] != null
+        ? Money.fromPaise((json['amountPaise'] as num).toInt())
+        : Money.fromDynamic(json['amount'] ?? json['netPayoutAmount']);
+
     return WithdrawalRequest(
-      id: (json['id'] ?? json['_id'] ?? '').toString(),
-      amount: Money.fromDynamic(json['amount']),
+      id: (json['withdrawalId'] ?? json['id'] ?? json['_id'] ?? '').toString(),
+      amount: amountVal,
       status: (json['status'] ?? 'pending').toString(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())
           : null,
-      remarks: json['remarks']?.toString(),
-      utr: json['utr']?.toString(),
+      remarks: (json['adminNote'] ?? json['remarks'] ?? json['reason'])?.toString(),
+      utr: (json['utr'] ?? json['bankUtr'])?.toString(),
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'].toString())
           : null,

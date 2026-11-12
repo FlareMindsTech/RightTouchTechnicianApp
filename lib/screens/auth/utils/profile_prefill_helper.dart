@@ -48,7 +48,13 @@ class ProfilePrefillHelper {
       locality.text = user.locality ?? raw['locality']?.toString() ?? '';
     }
     if (exp.text.isEmpty) {
-      exp.text = (user.experienceYears ?? raw['experienceYears'])?.toString() ?? '';
+      final years = user.experienceYears ?? raw['experienceYears'];
+      if (years != null) {
+        final parsed = int.tryParse(years.toString());
+        if (parsed != null && parsed > 0) {
+          exp.text = parsed.toString();
+        }
+      }
     }
     if (specialization.text.isEmpty) {
       specialization.text =

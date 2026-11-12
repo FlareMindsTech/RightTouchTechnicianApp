@@ -49,6 +49,7 @@ class ProfilePersonalFields extends StatelessWidget {
                 validator: (v) => Validators.validateName(
                   v,
                   fieldName: 'Last Name',
+                  minLength: 1,
                 ),
               ),
             ),

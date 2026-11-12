@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:right_touch/features/map/models/route_model.dart';
 import 'package:right_touch/utils/app_theme.dart';
 import 'package:right_touch/widgets/rt_loader.dart';
@@ -12,6 +13,7 @@ class RouteInfoBottomSheet extends StatelessWidget {
   final String destinationTitle;
   final String? destinationAddress;
   final String? customerPhone;
+  final LatLng? destinationCoordinates;
   final VoidCallback onStartNavigation;
   final VoidCallback onStopNavigation;
   final VoidCallback onRecalculateRoute;
@@ -25,6 +27,7 @@ class RouteInfoBottomSheet extends StatelessWidget {
     required this.destinationTitle,
     this.destinationAddress,
     this.customerPhone,
+    this.destinationCoordinates,
     required this.onStartNavigation,
     required this.onStopNavigation,
     required this.onRecalculateRoute,
@@ -37,8 +40,76 @@ class RouteInfoBottomSheet extends StatelessWidget {
     }
   }
 
+  Future<void> _sendWhatsAppEta(BuildContext context, String phone) async {
+    final clean = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    final cleanPhone = clean.length == 10 ? '91$clean' : clean;
+    final duration = routeData?.durationFormatted ?? 'shortly';
+    final arrivalClock = routeData != null ? _getArrivalClock(routeData!.durationSeconds) : '';
+    final etaStr = arrivalClock.isNotEmpty ? '$arrivalClock ($duration)' : duration;
+
+    final message =
+        'Hi! Your Right Touch technician is on the way to your location. Estimated arrival: $etaStr.';
+    final encoded = Uri.encodeComponent(message);
+    final uri = Uri.parse('whatsapp://send?phone=$cleanPhone&text=$encoded');
+    final webUri = Uri.parse('https://wa.me/$cleanPhone?text=$encoded');
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else if (await canLaunchUrl(webUri)) {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('WhatsApp is not installed on this device.')),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _launchExternalGoogleMaps(BuildContext context) async {
+    if (destinationCoordinates == null) return;
+    final lat = destinationCoordinates!.latitude;
+    final lng = destinationCoordinates!.longitude;
+
+    final nativeUri =
+        Uri.parse('google.navigation:q=$lat,$lng&mode=d');
+    final webUri = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
+
+    try {
+      if (await canLaunchUrl(nativeUri)) {
+        await launchUrl(nativeUri, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(webUri)) {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open external Google Maps.')),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
+  String _getArrivalClock(double durationSeconds) {
+    final arrivalTime =
+        DateTime.now().add(Duration(seconds: durationSeconds.round()));
+    final hour = arrivalTime.hour > 12
+        ? arrivalTime.hour - 12
+        : (arrivalTime.hour == 0 ? 12 : arrivalTime.hour);
+    final minute = arrivalTime.minute.toString().padLeft(2, '0');
+    final period = arrivalTime.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final clockArrival = routeData != null
+        ? _getArrivalClock(routeData!.durationSeconds)
+        : null;
+
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.white,
@@ -106,64 +177,8 @@ class RouteInfoBottomSheet extends StatelessWidget {
                 ),
               ),
 
-            // Next maneuver instruction (if navigating & steps available)
-            if (isNavigating &&
-                routeData != null &&
-                routeData!.steps.isNotEmpty) ...[
-              Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E88E5).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF1E88E5).withValues(alpha: 0.2)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1E88E5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.turn_right_rounded,
-                        color: AppTheme.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            routeData!.steps.first.instruction,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: AppTheme.black87,
-                            ),
-                          ),
-                          if (routeData!.steps.first.distanceMeters > 0)
-                            Text(
-                              "in ${(routeData!.steps.first.distanceMeters).toStringAsFixed(0)} meters",
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.grey,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            // Distance & ETA Row
+            // Destination and Quick Contact Row
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Column(
@@ -191,62 +206,106 @@ class RouteInfoBottomSheet extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (customerPhone != null && customerPhone!.isNotEmpty)
+                // Quick Call & WhatsApp CTA buttons
+                if (customerPhone != null && customerPhone!.isNotEmpty) ...[
                   IconButton.filledTonal(
-                    icon: const Icon(Icons.phone, color: AppTheme.green),
+                    icon: const Icon(Icons.chat_bubble_outline_rounded,
+                        color: Color(0xFF25D366), size: 20),
+                    tooltip: 'Send WhatsApp ETA',
+                    onPressed: () => _sendWhatsAppEta(context, customerPhone!),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366).withValues(alpha: 0.12),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton.filledTonal(
+                    icon: const Icon(Icons.phone, color: AppTheme.green, size: 20),
+                    tooltip: 'Call Customer',
                     onPressed: () => _callCustomer(customerPhone!),
                     style: IconButton.styleFrom(
                       backgroundColor: AppTheme.green.withValues(alpha: 0.12),
                     ),
                   ),
+                ],
               ],
             ),
 
             const SizedBox(height: 14),
 
-            // Route metrics pills (ETA & Distance)
+            // Route metrics pills (Clock Arrival, Travel Duration & Distance)
             if (routeData != null)
               Row(
                 children: [
+                  if (clockArrival != null) ...[
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1565C0).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.flag_rounded,
+                              color: Color(0xFF1565C0), size: 15),
+                          const SizedBox(width: 4),
+                          Text(
+                            clockArrival,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Color(0xFF1565C0),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                     decoration: BoxDecoration(
                       color: AppTheme.green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.access_time_filled,
-                            color: AppTheme.green, size: 16),
-                        const SizedBox(width: 6),
+                            color: AppTheme.green, size: 15),
+                        const SizedBox(width: 4),
                         Text(
                           routeData!.durationFormatted,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 13,
                             color: AppTheme.green,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                     decoration: BoxDecoration(
                       color: AppTheme.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.straighten,
-                            color: AppTheme.blue, size: 16),
-                        const SizedBox(width: 6),
+                            color: AppTheme.blue, size: 15),
+                        const SizedBox(width: 4),
                         Text(
                           routeData!.distanceFormatted,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 13,
                             color: AppTheme.blue,
                           ),
                         ),
@@ -264,35 +323,77 @@ class RouteInfoBottomSheet extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Primary action button (Start / Stop navigation)
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: isLoadingRoute
-                    ? null
-                    : (isNavigating ? onStopNavigation : onStartNavigation),
-                icon: isLoadingRoute
-                    ? const RtLoader.button(color: AppTheme.white)
-                    : Icon(isNavigating ? Icons.stop_rounded : Icons.navigation_rounded),
-                label: Text(
-                  isLoadingRoute
-                      ? "Calculating Route..."
-                      : (isNavigating ? "Exit Navigation" : "Start Navigation"),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+            // Navigation Actions: In-App Navigation + External Google Maps Voice Nav
+            Row(
+              children: [
+                // In-App Navigation Toggle
+                Expanded(
+                  flex: 3,
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: isLoadingRoute
+                          ? null
+                          : (isNavigating ? onStopNavigation : onStartNavigation),
+                      icon: isLoadingRoute
+                          ? const RtLoader.button(color: AppTheme.white)
+                          : Icon(isNavigating
+                              ? Icons.stop_rounded
+                              : Icons.navigation_rounded),
+                      label: Text(
+                        isLoadingRoute
+                            ? "Calculating..."
+                            : (isNavigating ? "Exit Nav" : "Start In-App Nav"),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isNavigating
+                            ? const Color(0xFFD32F2F)
+                            : AppTheme.primaryColor,
+                        foregroundColor: AppTheme.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isNavigating ? const Color(0xFFD32F2F) : AppTheme.primaryColor,
-                  foregroundColor: AppTheme.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                if (destinationCoordinates != null) ...[
+                  const SizedBox(width: 10),
+                  // External Google Maps Voice Navigation
+                  Expanded(
+                    flex: 2,
+                    child: SizedBox(
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _launchExternalGoogleMaps(context),
+                        icon: const Icon(Icons.volume_up_rounded,
+                            size: 18, color: Color(0xFF1A73E8)),
+                        label: const Text(
+                          "Voice Nav",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A73E8),
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                              color: Color(0xFF1A73E8), width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                ],
+              ],
             ),
           ],
         ),
